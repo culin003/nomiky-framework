@@ -6,10 +6,10 @@
 package org.nomiky.nomikyframework.bean;
 
 /**
- * 通过xml配置文件，生成controller、executor BEAN，交给spring管理
+ * 生成Controller Mapper
  *
  * @author nomiky
- * @since 2023年12月21日 11时19分
+ * @since 2023年12月22日 16时39分
  */
-public class BeanProcessor {
+public class ControllerBeanProcessor {
 }

@@ -13,6 +13,8 @@ public enum ExecutorEnum {
 
     TABLE_NAME_EMPTY(10000, "表名为空"),
     TABLE_EXPLAIN_ERROR(10001, "表解析错误"),
+    TABLE_NAME_NOT_SPECIFY(10002, "在tableDefine.xml中发现表名未定义"),
+    JDBC_TEMPLATE_IS_EMPTY(20000, "jdbcTemplate为空"),
     ;
 
     private Integer code;

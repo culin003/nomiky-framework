@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <framework>
-
-    <TableExecutors>
-        <table>rms_user</table>
-        <table>rms_session</table>
-    </TableExecutors>
-
     <!--
       将用户表映射到class类中，未指定class类时，直接映射为Map
       属性名称默认下划线转驼峰

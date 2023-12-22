@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <TableExecutors>
-    <table name="rms_user"/>
-    <table name="rms_session">
-        <includes>insert,deleteById,updateById,select,exist,count</includes>
-        <excludes>selectPage</excludes>
-    </table>
+    <table name="rms_user" keyGenerator="SNOWFLAKE"/>
+    <table name="rms_session" keyGenerator="SNOWFLAKE"/>
 </TableExecutors>

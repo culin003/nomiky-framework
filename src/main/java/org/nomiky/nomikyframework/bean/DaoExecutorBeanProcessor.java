@@ -16,19 +16,13 @@ import org.nomiky.nomikyframework.entity.TableDefinition;
 import org.nomiky.nomikyframework.exception.ExecutorException;
 import org.nomiky.nomikyframework.executor.DaoExecutor;
 import org.nomiky.nomikyframework.util.Checker;
-import org.springframework.dao.DataAccessException;
-import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.ResultSetExtractor;
-import org.springframework.jdbc.core.RowMapper;
 
 import java.io.Serializable;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.nomiky.nomikyframework.enums.ExecutorEnum.*;
+import static org.nomiky.nomikyframework.enums.ExecutorEnum.TABLE_EXPLAIN_ERROR;
+import static org.nomiky.nomikyframework.enums.ExecutorEnum.TABLE_NAME_EMPTY;
 
 /**
  * 生成表的Executor
@@ -37,6 +31,17 @@ import static org.nomiky.nomikyframework.enums.ExecutorEnum.*;
  * @since 2023年12月21日 18时24分
  */
 public class DaoExecutorBeanProcessor {
+
+    private DaoExecutorBeanProcessor() {
+    }
+
+    private final static class DaoExecutorBeanProcessorHelper {
+        private static final DaoExecutorBeanProcessor INSTANCE = new DaoExecutorBeanProcessor();
+    }
+
+    public static DaoExecutorBeanProcessor getInstance() {
+        return DaoExecutorBeanProcessorHelper.INSTANCE;
+    }
 
     /**
      * 创建指定表的Executor
@@ -131,24 +136,12 @@ public class DaoExecutorBeanProcessor {
 
             public List<Map<String, Object>> select(Map<String, Object> valuesMap) {
                 Pair<String, Object[]> parseResult = parseSelectSql(valuesMap, false, false);
-                return jdbcTemplate.query(parseResult.getKey(), (rs, rowNum) -> {
-                    Map<String, Object> resultMap = new HashMap<>();
-                    for (String column : tableDefinition.getColumns().keySet()) {
-                        resultMap.put(column, rs.getObject(column));
-                    }
-                    return resultMap;
-                }, parseResult.getValue());
+                return queryForMap(parseResult);
             }
 
             public Map<String, Object> selectOne(Map<String, Object> valuesMap) {
                 Pair<String, Object[]> parseResult = parseSelectSql(valuesMap, false, true);
-                List<Map<String, Object>> result = jdbcTemplate.query(parseResult.getKey(), (rs, rowNum) -> {
-                    Map<String, Object> resultMap = new HashMap<>();
-                    for (String column : tableDefinition.getColumns().keySet()) {
-                        resultMap.put(column, rs.getObject(column));
-                    }
-                    return resultMap;
-                }, parseResult.getValue());
+                List<Map<String, Object>> result = queryForMap(parseResult);
                 return CollUtil.isEmpty(result) ? new HashMap<>(0) : result.get(0);
             }
 
@@ -186,27 +179,19 @@ public class DaoExecutorBeanProcessor {
 
                 page.setTotal(count);
                 Pair<String, Object[]> parseResult = parseSelectPageSql(valuesMap);
-                List<Map<String, Object>> result = jdbcTemplate.query(parseResult.getKey(), (rs, rowNum) -> {
-                    Map<String, Object> resultMap = new HashMap<>();
-                    for (String column : tableDefinition.getColumns().keySet()) {
-                        resultMap.put(column, rs.getObject(column));
-                    }
-                    return resultMap;
-                }, parseResult.getValue());
-
-                page.setRecords(result);
+                page.setRecords(queryForMap(parseResult));
                 return page;
             }
 
-            private Pair<String, Object[]> parseSelectPageSql(Map<String, Object> valuesMap){
-                Pair<String, Object[]>  parseResult = parseSelectSql(valuesMap, false, false);
+            private Pair<String, Object[]> parseSelectPageSql(Map<String, Object> valuesMap) {
+                Pair<String, Object[]> parseResult = parseSelectSql(valuesMap, false, false);
                 String sql = parseResult.getKey();
                 Object[] params = parseResult.getValue();
                 sql += " LIMIT ?, ?";
                 int index = 0;
                 if (ArrayUtil.isEmpty(params)) {
                     params = new Object[2];
-                }else{
+                } else {
                     index = params.length - 1;
                     params = ArrayUtil.resize(params, params.length + 2);
                 }
@@ -245,7 +230,18 @@ public class DaoExecutorBeanProcessor {
 
                 return new Pair<>(sqlBuilder.toString(), params);
             }
+
+            private List<Map<String, Object>> queryForMap(Pair<String, Object[]> parseResult) {
+                return jdbcTemplate.query(parseResult.getKey(), (rs, rowNum) -> {
+                    Map<String, Object> resultMap = new HashMap<>();
+                    for (String column : tableDefinition.getColumns().keySet()) {
+                        resultMap.put(column, rs.getObject(column));
+                    }
+                    return resultMap;
+                }, parseResult.getValue());
+            }
         };
     }
+
 
 }

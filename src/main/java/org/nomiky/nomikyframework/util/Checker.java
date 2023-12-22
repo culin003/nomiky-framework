@@ -41,4 +41,10 @@ public class Checker {
             }
         }
     }
+
+    public static void checkBoolean(boolean express, String message) {
+        if (!express) {
+            throw new ExecutorException(message);
+        }
+    }
 }
