@@ -87,7 +87,7 @@ public class DaoExecutorBeanProcessor {
                 });
             }
 
-            public int deleteById(Serializable id) {
+            public int deleteById(Map<String, Object> valuesMap) {
                 String primaryKey = tableDefinition.getPrimaryKey();
                 Checker.checkEmpty(TABLE_EXPLAIN_ERROR, primaryKey);
                 StringBuilder sqlBuilder = new StringBuilder();
@@ -96,7 +96,7 @@ public class DaoExecutorBeanProcessor {
                         .append(" WHERE ")
                         .append(primaryKey)
                         .append(" = ?");
-                return jdbcTemplate.update(sqlBuilder.toString(), id);
+                return jdbcTemplate.update(sqlBuilder.toString(), valuesMap.get(tableDefinition.getPrimaryKey()));
             }
 
             public int updateById(Map<String, Object> valuesMap) {

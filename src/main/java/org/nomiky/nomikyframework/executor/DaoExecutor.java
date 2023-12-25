@@ -37,10 +37,10 @@ public interface DaoExecutor {
     /**
      * 根据表主键字段删除数据
      *
-     * @param id 主键值
+     * @param valuesMap 主键值
      * @return 删除的数据条数
      */
-    int deleteById(Serializable id);
+    int deleteById(Map<String, Object> valuesMap);
 
     /**
      * 根据表主键字段更新数据

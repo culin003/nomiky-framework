@@ -5,7 +5,10 @@
  */
 package org.nomiky.nomikyframework.entity;
 
+import cn.hutool.core.map.BiMap;
 import lombok.Data;
+
+import java.util.Map;
 
 /**
  * 在XML中定义的属性名称映射
@@ -17,12 +20,12 @@ import lombok.Data;
 public class XmlMapper {
 
     /**
-     * java对象属性名称
+     * 引用ID
      */
-    private String attrName;
+    private String id;
 
     /**
-     * 表字段名称
+     * 属性映射
      */
-    private String columnName;
+    private BiMap<String, String> attrToFieldMapper;
 }

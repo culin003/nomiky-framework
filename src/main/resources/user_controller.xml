@@ -1,42 +1,32 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<framework>
+<controller>
     <!--
       将用户表映射到class类中，未指定class类时，直接映射为Map
       属性名称默认下划线转驼峰
     -->
-    <mapper id="userMapper" class="xxx">
+    <mapper id="userMapper">
         <property name="userName">user_name</property>
     </mapper>
 
-    <controller path="user">
-        <!-- 简单查询 GET /user -->
-        <controller method="GET">
-            <!--
-              配置从controller到executor之间使用的interceptor
-            -->
-            <interceptors>
-                <interceptor>xxx</interceptor>
-                <interceptor>xxx</interceptor>
-            </interceptors>
-            <executor mapperRef="userMapper">
-                <!-- 参数类型：
-                  1、从请求URL参数中获取：
-                  ${param.xxx}
-                  2、从请求路径参数中获取，需要在controller -> path属性中包含xxx参数：
-                  ${path.xxx}
-                  3、从请求body中获取JSON属性：
-                  ${bodyJson.xxx}
-                  4、从请求body中获取body字符串：
-                  ${bodyString}
-                -->
-                <select>
-                    select * from user
-                    <condition>userId = ${bodyJson.userId}</condition>
-                    <condition>userName like concat('%','${bodyJson.userName}','%')</condition>
-                </select>
-            </executor>
-        </controller>
+    <!--
+      配置从controller到executor之间使用的interceptor
+    -->
+    <interceptors>
+        <interceptor>xxx</interceptor>
+        <interceptor>xxx</interceptor>
+    </interceptors>
 
+    <controller path="user">
+        <!-- 参数类型：
+          1、从请求URL参数中获取：
+          ${param.xxx}
+          2、从请求路径参数中获取，需要在controller -> path属性中包含xxx参数：
+          ${path.xxx}
+          3、从请求body中获取JSON属性：
+          ${bodyJson.xxx}
+          4、从请求body中获取body字符串：
+          ${bodyString}
+        -->
         <controller method="POST">
             <!--
               直接使用默认的表插入方法
@@ -55,14 +45,14 @@
             <!--
               直接使用默认的表更新方法
             -->
-            <executor ref="rms_user.updateById" params="bodyJson"/>
+            <executor ref="rms_user.updateById" params="param.id"/>
         </controller>
 
         <controller method="GET">
             <!--
               直接使用默认的查询方法
             -->
-            <executor ref="rms_user.select" include="" exclude="" params="bodyJson"/>
+            <executor ref="rms_user.select" params="bodyJson"/>
         </controller>
     </controller>
-</framework>
+</controller>

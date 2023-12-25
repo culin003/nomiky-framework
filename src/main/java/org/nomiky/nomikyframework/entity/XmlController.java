@@ -5,8 +5,12 @@
  */
 package org.nomiky.nomikyframework.entity;
 
+import cn.hutool.core.util.ClassUtil;
+import cn.hutool.core.util.ReflectUtil;
 import lombok.Data;
+import org.nomiky.nomikyframework.interceptor.NomikyInterceptor;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,6 +35,11 @@ public class XmlController {
     private String method;
 
     /**
+     * 数据类型
+     */
+    private String consume;
+
+    /**
      * 是否使用事务执行Executors
      */
     private Boolean useTransaction;
@@ -44,4 +53,28 @@ public class XmlController {
      * controller需要执行的业务
      */
     private List<XmlExecutor> executors;
+
+    private List<NomikyInterceptor> beforeInterceptors;
+
+    private List<NomikyInterceptor> afterInterceptors;
+
+    public void setInterceptors(Set<String> interceptors) {
+        this.interceptors = interceptors;
+
+    }
+
+    /**
+     * 拆分前后置拦截器
+     */
+    public void splitInterceptors() {
+        for (String interceptor : getInterceptors()) {
+            NomikyInterceptor interceptorInstance = ReflectUtil.newInstance(interceptor);
+            if (interceptorInstance.isBefore()) {
+                this.beforeInterceptors.add(interceptorInstance);
+            } else {
+                this.afterInterceptors.add(interceptorInstance);
+            }
+        }
+    }
+
 }

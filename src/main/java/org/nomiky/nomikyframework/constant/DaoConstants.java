@@ -21,4 +21,14 @@ public interface DaoConstants {
      * 分页参数：数据
      */
     String PAGING_RECORDS = "pageRecords";
+
+    /**
+     * 主键标识
+     */
+    String BODY_STRING = "bodyString";
+
+    /**
+     * 上个Execotor的结果
+     */
+    String PARENT_RESULT = "parentResult";
 }
