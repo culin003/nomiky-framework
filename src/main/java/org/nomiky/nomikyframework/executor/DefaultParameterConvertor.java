@@ -132,7 +132,7 @@ public class DefaultParameterConvertor implements ParameterConverter {
     private Map<String, Object> explainBodyJsonParams(HttpServletRequest request, String paramRef) throws IOException {
         Map<String, Object> valuesMap = new HashMap<>();
         String jsonStr = IoUtil.read(request.getInputStream(), Charset.defaultCharset());
-        JSONObject JsonObject = JSONUtil.toBean(jsonStr, JSONObject.class);
+        JSONObject jsonObject = JSONUtil.toBean(jsonStr, JSONObject.class);
         // 多个映射
         if (paramRef.contains(",")) {
             List<String> paramRefArray = StrUtil.split(paramRef, ",");
@@ -145,10 +145,9 @@ public class DefaultParameterConvertor implements ParameterConverter {
                 String key = paramArray.get(0);
                 String value = paramArray.get(1);
                 if (key.startsWith("bodyJson")) {
-                    valuesMap.put(value, JsonObject.get(value));
+                    valuesMap.put(StrUtil.toUnderlineCase(value), jsonObject.get(value));
                 }
             }
-
         }
         // 单个映射
         else if (paramRef.contains(".")) {
@@ -156,12 +155,12 @@ public class DefaultParameterConvertor implements ParameterConverter {
             String key = paramArray.get(0);
             String value = paramArray.get(1);
             if (key.startsWith("bodyJson")) {
-                valuesMap.put(value, JsonObject.get(value));
+                valuesMap.put(StrUtil.toUnderlineCase(value), jsonObject.get(value));
             }
         }
         // 全部映射
         else {
-            valuesMap = JSONUtil.toBean(JsonObject, Map.class);
+            jsonObject.forEach((k, v) -> valuesMap.put(StrUtil.toUnderlineCase(k), v));
         }
 
         return valuesMap;

@@ -18,7 +18,6 @@ import org.nomiky.nomikyframework.executor.DaoExecutor;
 import org.nomiky.nomikyframework.util.Checker;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import java.io.Serializable;
 import java.util.*;
 
 import static org.nomiky.nomikyframework.enums.ExecutorEnum.TABLE_EXPLAIN_ERROR;

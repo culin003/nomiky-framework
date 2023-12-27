@@ -16,6 +16,22 @@ import lombok.Data;
 @Data
 public class XmlExecutor {
 
+    public static final String TYPE_SQL = "sql";
+    public static final String TYPE_DEFAULT = "default";
+
+    /**
+     * 默认类型的执行器使用DaoExecutor已经定义好的方法执行
+     * SQL类型的执行器，会解析SQL语句执行
+     */
+    private String type = TYPE_DEFAULT;
+
+    /**
+     * SQL语句解析引擎：
+     * Groovy：符合Groovy语法的SQL语句和参数拼装语句
+     * JavaScript：符合JavaScript语法的SQL语句和参数拼装语句
+     */
+    private String engine;
+
     /**
      * 引用的属性映射，在返回数据和传参时将使用这个映射进行赋值
      */

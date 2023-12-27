@@ -31,4 +31,6 @@ public interface DaoConstants {
      * 上个Execotor的结果
      */
     String PARENT_RESULT = "parentResult";
+
+    String DAO_EXECUTOR_BEAN_NAME_SUBFFIX = "_bean";
 }

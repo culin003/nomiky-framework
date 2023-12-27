@@ -54,5 +54,15 @@
             -->
             <executor ref="rms_user.select" params="bodyJson"/>
         </controller>
+
+        <controller useTransaction="true" method="GET">
+            <executor type="sql" engine="groovy">
+                sqlResult += "select * from user"
+                if (param.id){
+                    sqlResult += " where id = ?"
+                    sqlParams[sqlParams.length] = param.id
+                }
+            </executor>
+        </controller>
     </controller>
 </controller>

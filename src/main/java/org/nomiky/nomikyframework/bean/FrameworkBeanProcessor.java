@@ -20,6 +20,7 @@ import org.dom4j.DocumentException;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
 import org.dom4j.tree.DefaultElement;
+import org.nomiky.nomikyframework.constant.DaoConstants;
 import org.nomiky.nomikyframework.entity.*;
 import org.nomiky.nomikyframework.enums.ExecutorEnum;
 import org.nomiky.nomikyframework.executor.DaoExecutor;
@@ -91,7 +92,7 @@ public class FrameworkBeanProcessor implements BeanDefinitionRegistryPostProcess
                 DaoExecutor daoExecutor = DaoExecutorBeanProcessor.getInstance().createSpecifyExecutor(tableDefinition, jdbcTemplate);
                 BeanDefinition beanDefinition = BeanDefinitionBuilder.genericBeanDefinition(DaoExecutor.class, () -> daoExecutor).getRawBeanDefinition();
                 // BEAN名称为tableName
-                registry.registerBeanDefinition(tableName + "_bean", beanDefinition);
+                registry.registerBeanDefinition(tableName + DaoConstants.DAO_EXECUTOR_BEAN_NAME_SUBFFIX, beanDefinition);
                 executorMap.put(tableName, daoExecutor);
                 log.info("Register DaoExecutor Bean: {}", tableName);
             });

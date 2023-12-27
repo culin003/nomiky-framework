@@ -7,7 +7,6 @@ package org.nomiky.nomikyframework.bean;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Data;
@@ -16,9 +15,9 @@ import org.nomiky.nomikyframework.entity.R;
 import org.nomiky.nomikyframework.entity.XmlController;
 import org.nomiky.nomikyframework.entity.XmlExecutor;
 import org.nomiky.nomikyframework.entity.XmlMapper;
+import org.nomiky.nomikyframework.executor.DaoExecutor;
 import org.nomiky.nomikyframework.executor.ParameterConverter;
 import org.nomiky.nomikyframework.executor.RequestHandler;
-import org.nomiky.nomikyframework.executor.DaoExecutor;
 import org.nomiky.nomikyframework.interceptor.InterceptorContext;
 import org.nomiky.nomikyframework.interceptor.NomikyInterceptor;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -26,7 +25,9 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * 生成Controller Mapper
@@ -85,13 +86,10 @@ public class ControllerBeanProcessor {
 
             List<XmlExecutor> executors = controller.getExecutors();
             if (CollUtil.isEmpty(executors)) {
-                try {
-                    response.getWriter().write(JSONUtil.toJsonStr(R.fail("Can not find DaoExecutor for controller mapping: " + controller.getPath())));
-                } catch (IOException e) {
-                    log.error("Can not find DaoExecutor for controller mapping: " + controller.getPath());
-                }
+                return R.fail("Can not find DaoExecutor for controller mapping: " + controller.getPath());
             }
 
+            // 置前拦截器
             InterceptorContext context = new InterceptorContext(request, response);
             List<NomikyInterceptor> beforeInterceptors = controller.getBeforeInterceptors();
             if (CollUtil.isNotEmpty(beforeInterceptors)) {
@@ -100,11 +98,13 @@ public class ControllerBeanProcessor {
                 }
             }
 
+            // 处理Executor
             Object value = StrUtil.EMPTY;
             for (XmlExecutor executor : executors) {
                 value = doExecutor(executor, request, value);
             }
 
+            // 后置拦截器
             context.setValue(value);
             List<NomikyInterceptor> afterInterceptors = controller.getAfterInterceptors();
             if (CollUtil.isNotEmpty(afterInterceptors)) {
@@ -138,15 +138,15 @@ public class ControllerBeanProcessor {
         String daoMethod = refArray.get(1);
         Map<String, Object> valueMap = parameterConverter.convert(executor.getParams(), request, parentParams);
         switch (daoMethod) {
-            case "insert" -> value = daoExecutor.insert(valueMap);
+            case "insert"     -> value = daoExecutor.insert(valueMap);
             case "deleteById" -> value = daoExecutor.deleteById(valueMap);
             case "updateById" -> value = daoExecutor.updateById(valueMap);
-            case "select" -> value = daoExecutor.select(valueMap);
-            case "selectOne" -> value = daoExecutor.selectOne(valueMap);
-            case "exist" -> value = daoExecutor.exist(valueMap);
-            case "count" -> value = daoExecutor.count(valueMap);
+            case "select"     -> value = daoExecutor.select(valueMap);
+            case "selectOne"  -> value = daoExecutor.selectOne(valueMap);
+            case "exist"      -> value = daoExecutor.exist(valueMap);
+            case "count"      -> value = daoExecutor.count(valueMap);
             case "selectPage" -> value = daoExecutor.selectPage(valueMap);
-            default -> value = StrUtil.EMPTY;
+            default           -> value = StrUtil.EMPTY;
         }
 
         return value;
