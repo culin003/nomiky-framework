@@ -6,9 +6,10 @@
 
     <groupId>com.nomiky</groupId>
     <artifactId>nomiky-framework</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.0.1</version>
 
     <properties>
+        <nexus.path>http://10.70.12.12:8081</nexus.path>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -66,5 +67,64 @@
         </dependency>
     </dependencies>
 
+    <repositories>
+        <repository>
+            <id>nexus-public</id>
+            <name>nexus-public</name>
+            <url>${nexus.path}/repository/maven-public/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>nexus-public</id>
+            <url>${nexus.path}/repository/maven-public/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <distributionManagement>
+        <!--maven上传配置-->
+        <snapshotRepository>
+            <id>maven_bsz_snapshot</id>
+            <name>Nexus SnapShots Repository</name>
+            <url>${nexus.path}/repository/maven_bsz_snapshot/</url>
+        </snapshotRepository>
+        <repository>
+            <id>maven_bsz_release</id>
+            <name>Nexus Release Repository</name>
+            <url>${nexus.path}/repository/maven_bsz_release/</url>
+        </repository>
+    </distributionManagement>
+
+    <build>
+        <plugins>
+            <!-- 要将源码放上去，需要加入这个插件 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.1</version>
+                <configuration>
+                    <attach>true</attach>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

@@ -8,6 +8,7 @@ package org.nomiky.nomikyframework.executor;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.nomiky.nomikyframework.entity.R;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
 
@@ -25,6 +26,7 @@ public interface RequestHandler {
      * @param request
      * @param response
      */
+    @ResponseBody
     R<?> handler(HttpServletRequest request, HttpServletResponse response) throws IOException;
 
 }

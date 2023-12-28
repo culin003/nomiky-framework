@@ -52,7 +52,9 @@ public class TableDefinitionBeanProcessor {
         Checker.checkEmpty(ExecutorEnum.JDBC_TEMPLATE_IS_EMPTY, jdbcTemplate);
         for (XmlTable xmlTable : xmlTables) {
             TableDefinition tableDefinition = explainTable(jdbcTemplate, xmlTable);
-            tableDefinitionMap.put(xmlTable.getSchema() + '.' + xmlTable.getName(), tableDefinition);
+            tableDefinitionMap.put(StrUtil.isEmpty(xmlTable.getSchema())
+                    ? xmlTable.getName()
+                    : (xmlTable.getSchema() + '.' + xmlTable.getName()), tableDefinition);
         }
     }
 
@@ -97,7 +99,7 @@ public class TableDefinitionBeanProcessor {
         jdbcTemplate.query(sql, rs -> {
             ResultSetMetaData metaData = rs.getMetaData();
             int columnCount = metaData.getColumnCount();
-            for (int i = 0; i < columnCount; i++) {
+            for (int i = 1; i <= columnCount; i++) {
                 columnMap.put(metaData.getColumnName(i),
                         DataTypeConverter.getInstance().getJavaType(metaData.getColumnType(i)));
             }

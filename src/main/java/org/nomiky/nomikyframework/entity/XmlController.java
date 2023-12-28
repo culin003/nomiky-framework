@@ -5,12 +5,10 @@
  */
 package org.nomiky.nomikyframework.entity;
 
-import cn.hutool.core.util.ClassUtil;
 import cn.hutool.core.util.ReflectUtil;
 import lombok.Data;
 import org.nomiky.nomikyframework.interceptor.NomikyInterceptor;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -60,7 +58,7 @@ public class XmlController {
 
     public void setInterceptors(Set<String> interceptors) {
         this.interceptors = interceptors;
-
+        splitInterceptors();
     }
 
     /**

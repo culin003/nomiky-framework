@@ -67,7 +67,7 @@ public class DefaultParameterConvertor implements ParameterConverter {
                 List<String> paramArray = StrUtil.split(s, ".");
                 String key = paramArray.get(0);
                 String value = paramArray.get(1);
-                if (key.startsWith("param")) {
+                if (key.startsWith("param") && null != request.getParameter(value)) {
                     valuesMap.put(value, request.getParameter(value));
                 }
             }
@@ -77,7 +77,7 @@ public class DefaultParameterConvertor implements ParameterConverter {
             List<String> paramArray = StrUtil.split(paramRef, ".");
             String key = paramArray.get(0);
             String value = paramArray.get(1);
-            if (key.startsWith("bodyJson")) {
+            if (key.startsWith("param") && null != request.getParameter(value)) {
                 valuesMap.put(value, request.getParameter(value));
             }
         }
@@ -87,7 +87,9 @@ public class DefaultParameterConvertor implements ParameterConverter {
             while (enumeration.hasMoreElements()) {
                 String key = enumeration.nextElement();
                 String value = request.getParameter(key);
-                valuesMap.put(key, value);
+                if (null != request.getParameter(value)) {
+                    valuesMap.put(key, value);
+                }
             }
         }
 
@@ -145,7 +147,7 @@ public class DefaultParameterConvertor implements ParameterConverter {
                 String key = paramArray.get(0);
                 String value = paramArray.get(1);
                 if (key.startsWith("bodyJson")) {
-                    valuesMap.put(StrUtil.toUnderlineCase(value), jsonObject.get(value));
+                    valuesMap.put(value, jsonObject.get(value));
                 }
             }
         }
@@ -155,7 +157,7 @@ public class DefaultParameterConvertor implements ParameterConverter {
             String key = paramArray.get(0);
             String value = paramArray.get(1);
             if (key.startsWith("bodyJson")) {
-                valuesMap.put(StrUtil.toUnderlineCase(value), jsonObject.get(value));
+                valuesMap.put(value, jsonObject.get(value));
             }
         }
         // 全部映射

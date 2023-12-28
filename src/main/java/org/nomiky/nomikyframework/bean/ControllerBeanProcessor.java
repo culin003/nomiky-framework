@@ -20,6 +20,8 @@ import org.nomiky.nomikyframework.executor.ParameterConverter;
 import org.nomiky.nomikyframework.executor.RequestHandler;
 import org.nomiky.nomikyframework.interceptor.InterceptorContext;
 import org.nomiky.nomikyframework.interceptor.NomikyInterceptor;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -61,13 +63,21 @@ public class ControllerBeanProcessor {
 
         for (XmlController controller : controllers) {
             registerMapping(controller);
+            log.info("Register controller mapping handler, path: {}, method: {}",
+                    controller.getPath(),
+                    StrUtil.isEmpty(controller.getMethod()) ? HttpMethod.GET.name() : controller.getMethod());
         }
     }
 
     private void registerMapping(XmlController controller) throws NoSuchMethodException {
         RequestMappingInfo mappingInfo = RequestMappingInfo.paths(controller.getPath())
-                .methods(RequestMethod.resolve(StrUtil.emptyToDefault(controller.getMethod(), "GET").toUpperCase()))
-                .consumes(StrUtil.isEmpty(controller.getConsume()) ? new String[0] : new String[]{controller.getConsume()})
+                .methods(StrUtil.isEmpty(controller.getMethod())
+                        ? RequestMethod.GET
+                        : RequestMethod.resolve(controller.getMethod().toUpperCase()))
+                .consumes(StrUtil.isEmpty(controller.getConsume())
+                        ? new String[0]
+                        : new String[]{controller.getConsume()})
+                .produces(MediaType.APPLICATION_JSON_VALUE)
                 .build();
 
 
@@ -105,9 +115,9 @@ public class ControllerBeanProcessor {
             }
 
             // 后置拦截器
-            context.setValue(value);
             List<NomikyInterceptor> afterInterceptors = controller.getAfterInterceptors();
             if (CollUtil.isNotEmpty(afterInterceptors)) {
+                context.setValue(value);
                 for (NomikyInterceptor afterInterceptor : afterInterceptors) {
                     afterInterceptor.process(context);
                 }

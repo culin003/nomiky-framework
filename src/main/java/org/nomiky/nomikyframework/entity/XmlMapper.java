@@ -8,8 +8,6 @@ package org.nomiky.nomikyframework.entity;
 import cn.hutool.core.map.BiMap;
 import lombok.Data;
 
-import java.util.Map;
-
 /**
  * 在XML中定义的属性名称映射
  *

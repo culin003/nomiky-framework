@@ -10,6 +10,7 @@ import cn.hutool.core.lang.Pair;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.nomiky.nomikyframework.constant.DaoConstants;
 import org.nomiky.nomikyframework.entity.Page;
 import org.nomiky.nomikyframework.entity.TableDefinition;
@@ -29,6 +30,7 @@ import static org.nomiky.nomikyframework.enums.ExecutorEnum.TABLE_NAME_EMPTY;
  * @author nomiky
  * @since 2023年12月21日 18时24分
  */
+@Slf4j
 public class DaoExecutorBeanProcessor {
 
     private DaoExecutorBeanProcessor() {
@@ -55,11 +57,12 @@ public class DaoExecutorBeanProcessor {
                 return tableDefinition.getName();
             }
 
-            public int insert(final Map<String, Object> valuesMap) {
+            public int insert(Map<String, Object> valuesMap) {
                 String primaryKey = tableDefinition.getPrimaryKey();
                 Checker.checkEmpty(TABLE_EXPLAIN_ERROR, primaryKey);
+                Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
                 StringBuilder sqlBuilder = new StringBuilder();
-                final LinkedHashSet<String> columnSet = new LinkedHashSet<>(valuesMap.keySet());
+                final LinkedHashSet<String> columnSet = new LinkedHashSet<>(finalMap.keySet());
                 columnSet.remove(primaryKey);
 
                 sqlBuilder.append("INSERT INTO ")
@@ -75,12 +78,13 @@ public class DaoExecutorBeanProcessor {
                 }
 
                 sqlBuilder.append(')');
+                log.info("SQL: {}", sqlBuilder);
                 return jdbcTemplate.update(sqlBuilder.toString(), ps -> {
                     ps.setObject(1, tableDefinition.generateId());
                     int index = 2;
                     for (String tableColumn : columnSet) {
-                        if (valuesMap.containsKey(tableColumn)) {
-                            ps.setObject(index++, valuesMap.get(tableColumn));
+                        if (finalMap.containsKey(tableColumn)) {
+                            ps.setObject(index++, finalMap.get(tableColumn));
                         }
                     }
                 });
@@ -95,7 +99,9 @@ public class DaoExecutorBeanProcessor {
                         .append(" WHERE ")
                         .append(primaryKey)
                         .append(" = ?");
-                return jdbcTemplate.update(sqlBuilder.toString(), valuesMap.get(tableDefinition.getPrimaryKey()));
+                Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
+                log.info("SQL: {}", sqlBuilder);
+                return jdbcTemplate.update(sqlBuilder.toString(), finalMap.get(tableDefinition.getPrimaryKey()));
             }
 
             public int updateById(Map<String, Object> valuesMap) {
@@ -105,11 +111,12 @@ public class DaoExecutorBeanProcessor {
                     throw new ExecutorException("Primary key value is unset！");
                 }
 
+                Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
                 StringBuilder sqlBuilder = new StringBuilder();
                 sqlBuilder.append("UPDATE ")
                         .append(tableDefinition.getName())
                         .append(" SET");
-                LinkedHashMap<String, Object> finalValueMap = new LinkedHashMap<>(valuesMap);
+                LinkedHashMap<String, Object> finalValueMap = new LinkedHashMap<>(finalMap);
                 finalValueMap.forEach((k, v) -> {
                     if (!k.equalsIgnoreCase(primaryKey)) {
                         sqlBuilder.append(' ').append(k).append(" = ?,");
@@ -119,6 +126,7 @@ public class DaoExecutorBeanProcessor {
                 sqlBuilder.deleteCharAt(sqlBuilder.length() - 1);
                 sqlBuilder.append(" WHERE ").append(primaryKey).append(" = ?");
 
+                log.info("SQL: {}", sqlBuilder);
                 return jdbcTemplate.update(sqlBuilder.toString(), ps -> {
                     int index = 1;
                     for (Map.Entry<String, Object> entry : finalValueMap.entrySet()) {
@@ -129,23 +137,29 @@ public class DaoExecutorBeanProcessor {
                         }
                     }
 
-                    ps.setObject(index, valuesMap.get(primaryKey));
+                    ps.setObject(index, finalMap.get(primaryKey));
                 });
             }
 
             public List<Map<String, Object>> select(Map<String, Object> valuesMap) {
-                Pair<String, Object[]> parseResult = parseSelectSql(valuesMap, false, false);
+                Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
+                Pair<String, Object[]> parseResult = parseSelectSql(finalMap, false, false);
+                log.info("SQL: {}", parseResult.getKey());
                 return queryForMap(parseResult);
             }
 
             public Map<String, Object> selectOne(Map<String, Object> valuesMap) {
-                Pair<String, Object[]> parseResult = parseSelectSql(valuesMap, false, true);
+                Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
+                Pair<String, Object[]> parseResult = parseSelectSql(finalMap, false, true);
+                log.info("SQL: {}", parseResult.getKey());
                 List<Map<String, Object>> result = queryForMap(parseResult);
                 return CollUtil.isEmpty(result) ? new HashMap<>(0) : result.get(0);
             }
 
             public Boolean exist(Map<String, Object> valuesMap) {
-                Pair<String, Object[]> parseResult = parseSelectSql(valuesMap, true, true);
+                Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
+                Pair<String, Object[]> parseResult = parseSelectSql(finalMap, true, true);
+                log.info("SQL: {}", parseResult.getKey());
                 Long count = jdbcTemplate.query(parseResult.getKey(), rs -> {
                     return rs.getLong(1);
                 }, parseResult.getValue());
@@ -153,7 +167,9 @@ public class DaoExecutorBeanProcessor {
             }
 
             public Long count(Map<String, Object> valuesMap) {
-                Pair<String, Object[]> parseResult = parseSelectSql(valuesMap, true, false);
+                Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
+                Pair<String, Object[]> parseResult = parseSelectSql(finalMap, true, false);
+                log.info("SQL: {}", parseResult.getKey());
                 Long count = jdbcTemplate.query(parseResult.getKey(), rs -> {
                     return rs.getLong(1);
                 }, parseResult.getValue());
@@ -167,7 +183,8 @@ public class DaoExecutorBeanProcessor {
                     return new Page();
                 }
 
-                Long count = count(valuesMap);
+                Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
+                Long count = count(finalMap);
                 page.setCurrent((Long) valuesMap.get(DaoConstants.PAGING_CURRENT));
                 page.setSize((Long) valuesMap.get(DaoConstants.PAGING_SIZE));
                 if (count <= 0) {
@@ -177,12 +194,13 @@ public class DaoExecutorBeanProcessor {
                 }
 
                 page.setTotal(count);
-                Pair<String, Object[]> parseResult = parseSelectPageSql(valuesMap);
+                Pair<String, Object[]> parseResult = parseSelectPageSql(finalMap, page);
+                log.info("SQL: {}", parseResult.getKey());
                 page.setRecords(queryForMap(parseResult));
                 return page;
             }
 
-            private Pair<String, Object[]> parseSelectPageSql(Map<String, Object> valuesMap) {
+            private Pair<String, Object[]> parseSelectPageSql(Map<String, Object> valuesMap, Page page) {
                 Pair<String, Object[]> parseResult = parseSelectSql(valuesMap, false, false);
                 String sql = parseResult.getKey();
                 Object[] params = parseResult.getValue();
@@ -195,10 +213,8 @@ public class DaoExecutorBeanProcessor {
                     params = ArrayUtil.resize(params, params.length + 2);
                 }
 
-                Integer current = (Integer) valuesMap.get(DaoConstants.PAGING_CURRENT);
-                Integer pageSize = (Integer) valuesMap.get(DaoConstants.PAGING_SIZE);
-                params[++index] = (current - 1) * pageSize;
-                params[++index] = pageSize;
+                params[++index] = (page.getCurrent() - 1) * page.getSize();
+                params[++index] = page.getSize();
                 return new Pair<>(sql, params);
             }
 

@@ -5,13 +5,16 @@
  */
 package org.nomiky.nomikyframework.entity;
 
+import cn.hutool.core.convert.Convert;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.Data;
 
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * 表
@@ -33,11 +36,11 @@ public class TableDefinition {
     private String name;
 
     /**
-     * <pro>
+     * <pre>
      * 表主键字段，默认只会有一个主键！会根据这个主键进行修改和删除。
      * 所以，一般要求数据库表中只存在一个唯一主键！
      * 如果需要联合主键，建议除了唯一主键以外，使用唯一索引来代替联合主键
-     * </pro>
+     * </pre>
      */
     private String primaryKey;
 
@@ -67,18 +70,28 @@ public class TableDefinition {
     /**
      * 转换参数值为符合字段类型的值
      *
-     * @param name  参数名，驼峰格式，自动转换为下划线格式的字段名
-     * @param value 参数值
+     * @param paramMap 参数名，驼峰格式，自动转换为下划线格式的字段名
      * @return 符合字段类型的实际值
      */
-    public Object toRealTypeValue(String name, Object value) {
-        String columnName = StrUtil.toUnderlineCase(name);
-        if (!getColumns().containsKey(columnName)) {
-            return value;
+    public Map<String, Object> toDaoValueMap(Map<String, Object> paramMap) {
+        if (MapUtil.isEmpty(paramMap)) {
+            return paramMap;
         }
 
-        Type type = getColumns().get(columnName);
+        Map<String, Object> valuesMap = new HashMap<>(paramMap.size());
+        paramMap.forEach((k, v) -> {
+            String columnName = StrUtil.toUnderlineCase(k);
+            if (getColumns().containsKey(columnName)) {
+                Type dataType = getColumns().get(columnName);
+                valuesMap.put(columnName, toDataValue(v, dataType));
+            }
+        });
 
-        return null;
+        return valuesMap;
+    }
+
+    private Object toDataValue(Object value, Type dataType) {
+        // 从参数中解析出来的值默认只有两种类型：字符串、数字
+        return Convert.convertWithCheck(dataType, value, null, false);
     }
 }

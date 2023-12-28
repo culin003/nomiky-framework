@@ -28,9 +28,9 @@ public interface DaoConstants {
     String BODY_STRING = "bodyString";
 
     /**
-     * 上个Execotor的结果
+     * 上个Executor的结果
      */
     String PARENT_RESULT = "parentResult";
 
-    String DAO_EXECUTOR_BEAN_NAME_SUBFFIX = "_bean";
+    String DAO_EXECUTOR_BEAN_NAME_SUFFIX = "_bean";
 }

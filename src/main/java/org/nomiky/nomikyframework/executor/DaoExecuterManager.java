@@ -21,7 +21,7 @@ public class DaoExecuterManager implements ApplicationContextAware {
     private ApplicationContext applicationContext;
 
     public DaoExecutor getExecutor(String tableName) {
-        return (DaoExecutor) applicationContext.getBean(tableName + DaoConstants.DAO_EXECUTOR_BEAN_NAME_SUBFFIX);
+        return (DaoExecutor) applicationContext.getBean(tableName + DaoConstants.DAO_EXECUTOR_BEAN_NAME_SUFFIX);
     }
 
     @Override

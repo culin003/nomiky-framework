@@ -7,7 +7,6 @@ package org.nomiky.nomikyframework.executor;
 
 import org.nomiky.nomikyframework.entity.Page;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
