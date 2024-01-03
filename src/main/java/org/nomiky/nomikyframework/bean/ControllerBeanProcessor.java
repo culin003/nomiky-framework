@@ -139,6 +139,7 @@ public class ControllerBeanProcessor {
         }
 
         String daoName = refArray.get(0);
+        daoName = StrUtil.isEmpty(executor.getSchema()) ? StrUtil.EMPTY : (executor.getSchema() + '.' + daoName);
         DaoExecutor daoExecutor = executorMap.get(daoName);
         if (null == daoExecutor) {
             return null;

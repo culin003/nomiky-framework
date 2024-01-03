@@ -205,6 +205,7 @@ public class FrameworkBeanProcessor implements BeanDefinitionRegistryPostProcess
             DefaultElement executorElement = (DefaultElement) executorNode;
             executor.setParams(executorElement.attributeValue("params"));
             executor.setRef(executorElement.attributeValue("ref"));
+            executor.setSchema(executorElement.attributeValue("schema"));
             executor.setMapperRef(executorElement.attributeValue("mapperRef"));
             // TODO: 后面再实现Executor中的SQL语句定义
             // executor.setXmlSqlDefinition();

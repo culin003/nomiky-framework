@@ -38,6 +38,11 @@ public class XmlExecutor {
     private String mapperRef;
 
     /**
+     * 数据表的schema
+     */
+    private String schema;
+
+    /**
      * 引用某个表的Executor,格式为：tableName.methodName，调用此tableName对应的Executor的methodName方法
      * 此属性与xmlSqlDefinition互斥
      */

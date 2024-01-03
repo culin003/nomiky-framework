@@ -137,9 +137,12 @@ public class SpelParameterConvertor implements ParameterConverter {
         EvaluationContext context = new StandardEvaluationContext();
         context.setVariable(paramName, valuesMap);
         Expression expression = SPEL_EXPRESSION_PARSER.parseExpression(spelExpression);
-        Matcher matcher = PATTERN.matcher(expression.getExpressionString());
-        if (matcher.find()) {
-            resultMap.put(matcher.group(1), expression.getValue(context));
+        Object value = expression.getValue(context);
+        if (null != value) {
+            Matcher matcher = PATTERN.matcher(expression.getExpressionString());
+            if (matcher.find()) {
+                resultMap.put(matcher.group(1), value);
+            }
         }
     }
 }
