@@ -22,7 +22,7 @@ import org.nomiky.nomikyframework.constant.DaoConstants;
 import org.nomiky.nomikyframework.entity.*;
 import org.nomiky.nomikyframework.enums.ExecutorEnum;
 import org.nomiky.nomikyframework.executor.DaoExecutor;
-import org.nomiky.nomikyframework.executor.DefaultParameterConvertor;
+import org.nomiky.nomikyframework.executor.SpelParameterConvertor;
 import org.nomiky.nomikyframework.util.Checker;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanCreationException;
@@ -116,7 +116,7 @@ public class FrameworkBeanProcessor implements BeanDefinitionRegistryPostProcess
                 controllerBeanProcessor.setExecutorMap(executorMap);
                 controllerBeanProcessor.setInterceptors(interceptors);
                 controllerBeanProcessor.setMappers(mappers);
-                controllerBeanProcessor.setParameterConverter(new DefaultParameterConvertor());
+                controllerBeanProcessor.setParameterConverter(new SpelParameterConvertor());
                 controllerBeanProcessorList.add(controllerBeanProcessor);
             }
         } catch (DocumentException de) {

@@ -74,7 +74,7 @@ public class TableDefinitionBeanProcessor {
         tableDefinition.setPrimaryKey(primaryKey);
         LinkedHashMap<String, Type> columnMap = getColumnAndTypes(jdbcTemplate, xmlTable);
         tableDefinition.setColumns(columnMap);
-        log.info("Explain table {}, primary key: {}, columns: {}", xmlTable.getName(), primaryKey, StrUtil.join(",", columnMap.keySet()));
+        log.info("Explain table {}, primary key: {}, columns: {}", xmlTable.getName(), primaryKey, StrUtil.join(StrUtil.COMMA, columnMap.keySet()));
         return tableDefinition;
     }
 

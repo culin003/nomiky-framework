@@ -57,7 +57,7 @@ public class DaoExecutorBeanProcessor {
                 return tableDefinition.getName();
             }
 
-            public int insert(Map<String, Object> valuesMap) {
+            public Integer insert(Map<String, Object> valuesMap) {
                 String primaryKey = tableDefinition.getPrimaryKey();
                 Checker.checkEmpty(TABLE_EXPLAIN_ERROR, primaryKey);
                 Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
@@ -70,7 +70,7 @@ public class DaoExecutorBeanProcessor {
                         .append('(')
                         .append(primaryKey)
                         .append(',')
-                        .append(StrUtil.join(",", columnSet))
+                        .append(StrUtil.join(StrUtil.COMMA, columnSet))
                         .append(')')
                         .append(" VALUES (");
                 for (int i = 0; i < columnSet.size(); i++) {
@@ -90,7 +90,7 @@ public class DaoExecutorBeanProcessor {
                 });
             }
 
-            public int deleteById(Map<String, Object> valuesMap) {
+            public Integer deleteById(Map<String, Object> valuesMap) {
                 String primaryKey = tableDefinition.getPrimaryKey();
                 Checker.checkEmpty(TABLE_EXPLAIN_ERROR, primaryKey);
                 StringBuilder sqlBuilder = new StringBuilder();
@@ -104,7 +104,7 @@ public class DaoExecutorBeanProcessor {
                 return jdbcTemplate.update(sqlBuilder.toString(), finalMap.get(tableDefinition.getPrimaryKey()));
             }
 
-            public int updateById(Map<String, Object> valuesMap) {
+            public Integer updateById(Map<String, Object> valuesMap) {
                 String primaryKey = tableDefinition.getPrimaryKey();
                 Checker.checkEmpty(TABLE_EXPLAIN_ERROR, primaryKey);
                 if (!valuesMap.containsKey(primaryKey)) {
@@ -222,7 +222,7 @@ public class DaoExecutorBeanProcessor {
                 StringBuilder sqlBuilder = new StringBuilder();
                 Set<String> columns = tableDefinition.getColumns().keySet();
                 sqlBuilder.append("SELECT ")
-                        .append(isCount ? "COUNT(*)" : StrUtil.join(",", columns))
+                        .append(isCount ? "COUNT(*)" : StrUtil.join(StrUtil.COMMA, columns))
                         .append(" FROM ")
                         .append(tableDefinition.getName());
                 Object[] params = null;

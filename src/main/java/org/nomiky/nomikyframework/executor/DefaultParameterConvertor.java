@@ -38,14 +38,14 @@ public class DefaultParameterConvertor implements ParameterConverter {
 
     @Override
     public Map<String, Object> convert(String paramRef, HttpServletRequest request, Object parentParams) throws IOException {
-        paramRef = StrUtil.isEmpty(paramRef) ? "bodyJson" : paramRef;
+        paramRef = StrUtil.isEmpty(paramRef) ? DaoConstants.REQUEST_PARAMETER : paramRef;
         Map<String, Object> valuesMap = new HashMap<>();
-        if (paramRef.startsWith("bodyJson")) {
+        if (paramRef.startsWith(DaoConstants.BODY_JSON)) {
             valuesMap = explainBodyJsonParams(request, paramRef);
-        } else if (paramRef.startsWith("bodyString")) {
+        } else if (paramRef.startsWith(DaoConstants.BODY_STRING)) {
             String bodyString = IoUtil.read(request.getInputStream(), Charset.defaultCharset());
             valuesMap.put(DaoConstants.BODY_STRING, bodyString);
-        } else if (paramRef.startsWith("parent")) {
+        } else if (paramRef.startsWith(DaoConstants.PARENT_RESULT)) {
             valuesMap = explainParentParams(parentParams, paramRef);
         } else {
             valuesMap = explainParamParams(request, paramRef);
@@ -57,8 +57,8 @@ public class DefaultParameterConvertor implements ParameterConverter {
     private Map<String, Object> explainParamParams(HttpServletRequest request, String paramRef) {
         Map<String, Object> valuesMap = new HashMap<>();
         // 多个映射
-        if (paramRef.contains(",")) {
-            List<String> paramRefArray = StrUtil.split(paramRef, ",");
+        if (paramRef.contains(StrUtil.COMMA)) {
+            List<String> paramRefArray = StrUtil.split(paramRef, StrUtil.COMMA);
             for (String s : paramRefArray) {
                 if (!s.contains(".")) {
                     continue;
@@ -67,7 +67,7 @@ public class DefaultParameterConvertor implements ParameterConverter {
                 List<String> paramArray = StrUtil.split(s, ".");
                 String key = paramArray.get(0);
                 String value = paramArray.get(1);
-                if (key.startsWith("param") && null != request.getParameter(value)) {
+                if (key.startsWith(DaoConstants.REQUEST_PARAMETER) && null != request.getParameter(value)) {
                     valuesMap.put(value, request.getParameter(value));
                 }
             }
@@ -77,7 +77,7 @@ public class DefaultParameterConvertor implements ParameterConverter {
             List<String> paramArray = StrUtil.split(paramRef, ".");
             String key = paramArray.get(0);
             String value = paramArray.get(1);
-            if (key.startsWith("param") && null != request.getParameter(value)) {
+            if (key.startsWith(DaoConstants.REQUEST_PARAMETER) && null != request.getParameter(value)) {
                 valuesMap.put(value, request.getParameter(value));
             }
         }
@@ -99,8 +99,8 @@ public class DefaultParameterConvertor implements ParameterConverter {
     private Map<String, Object> explainParentParams(Object parentParams, String paramRef) {
         Map<String, Object> valuesMap = new HashMap<>();
         // 多个映射
-        if (paramRef.contains(",")) {
-            List<String> paramRefArray = StrUtil.split(paramRef, ",");
+        if (paramRef.contains(StrUtil.COMMA)) {
+            List<String> paramRefArray = StrUtil.split(paramRef, StrUtil.COMMA);
             for (String s : paramRefArray) {
                 if (!s.contains(".")) {
                     continue;
@@ -109,7 +109,7 @@ public class DefaultParameterConvertor implements ParameterConverter {
                 List<String> paramArray = StrUtil.split(s, ".");
                 String key = paramArray.get(0);
                 String value = paramArray.get(1);
-                if (key.startsWith("param")) {
+                if (key.startsWith(DaoConstants.REQUEST_PARAMETER)) {
                     valuesMap.put(value, ((Map<String, Object>) parentParams).get(value));
                 }
             }
@@ -119,7 +119,7 @@ public class DefaultParameterConvertor implements ParameterConverter {
             List<String> paramArray = StrUtil.split(paramRef, ".");
             String key = paramArray.get(0);
             String value = paramArray.get(1);
-            if (key.startsWith("bodyJson")) {
+            if (key.startsWith(DaoConstants.BODY_JSON)) {
                 valuesMap.put(value, ((Map<String, Object>) parentParams).get(value));
             }
         }
@@ -136,8 +136,8 @@ public class DefaultParameterConvertor implements ParameterConverter {
         String jsonStr = IoUtil.read(request.getInputStream(), Charset.defaultCharset());
         JSONObject jsonObject = JSONUtil.toBean(jsonStr, JSONObject.class);
         // 多个映射
-        if (paramRef.contains(",")) {
-            List<String> paramRefArray = StrUtil.split(paramRef, ",");
+        if (paramRef.contains(StrUtil.COMMA)) {
+            List<String> paramRefArray = StrUtil.split(paramRef, StrUtil.COMMA);
             for (String s : paramRefArray) {
                 if (!s.contains(".")) {
                     continue;
@@ -146,7 +146,7 @@ public class DefaultParameterConvertor implements ParameterConverter {
                 List<String> paramArray = StrUtil.split(s, ".");
                 String key = paramArray.get(0);
                 String value = paramArray.get(1);
-                if (key.startsWith("bodyJson")) {
+                if (key.startsWith(DaoConstants.BODY_JSON)) {
                     valuesMap.put(value, jsonObject.get(value));
                 }
             }
@@ -156,13 +156,13 @@ public class DefaultParameterConvertor implements ParameterConverter {
             List<String> paramArray = StrUtil.split(paramRef, ".");
             String key = paramArray.get(0);
             String value = paramArray.get(1);
-            if (key.startsWith("bodyJson")) {
+            if (key.startsWith(DaoConstants.BODY_JSON)) {
                 valuesMap.put(value, jsonObject.get(value));
             }
         }
         // 全部映射
         else {
-            jsonObject.forEach((k, v) -> valuesMap.put(StrUtil.toUnderlineCase(k), v));
+            valuesMap.putAll(jsonObject);
         }
 
         return valuesMap;

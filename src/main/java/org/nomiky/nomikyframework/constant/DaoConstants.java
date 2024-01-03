@@ -23,14 +23,29 @@ public interface DaoConstants {
     String PAGING_RECORDS = "pageRecords";
 
     /**
-     * 主键标识
+     * 从request流中获取到的字符串参数
      */
     String BODY_STRING = "bodyString";
 
     /**
      * 上个Executor的结果
      */
-    String PARENT_RESULT = "parentResult";
+    String PARENT_RESULT = "parent";
+
+    /**
+     * 从request头中获取到的参数
+     */
+    String REQUEST_HEADER = "header";
+
+    /**
+     * 从request中获取到的参数
+     */
+    String REQUEST_PARAMETER = "param";
+
+    /**
+     * 从request流中获取到的字符串转换成json对象后的参数
+     */
+    String BODY_JSON = "bodyJson";
 
     String DAO_EXECUTOR_BEAN_NAME_SUFFIX = "_bean";
 }

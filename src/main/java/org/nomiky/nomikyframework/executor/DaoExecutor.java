@@ -31,7 +31,7 @@ public interface DaoExecutor {
      * @param valuesMap 包含字段属性名称和值的映射集合，默认将驼峰属性名称转换成数据库表字段使用的下划线名称
      * @return 插入的数据条数
      */
-    int insert(Map<String, Object> valuesMap);
+    Integer insert(Map<String, Object> valuesMap);
 
     /**
      * 根据表主键字段删除数据
@@ -39,7 +39,7 @@ public interface DaoExecutor {
      * @param valuesMap 主键值
      * @return 删除的数据条数
      */
-    int deleteById(Map<String, Object> valuesMap);
+    Integer deleteById(Map<String, Object> valuesMap);
 
     /**
      * 根据表主键字段更新数据
@@ -47,7 +47,7 @@ public interface DaoExecutor {
      * @param valuesMap 包含字段属性名称和值的映射集合，默认将驼峰属性名称转换成数据库表字段使用的下划线名称
      * @return 更新的数据条数
      */
-    int updateById(Map<String, Object> valuesMap);
+    Integer updateById(Map<String, Object> valuesMap);
 
     /**
      * 根据条件查询表数据

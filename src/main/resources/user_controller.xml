@@ -31,7 +31,7 @@
             <!--
               直接使用默认的表插入方法
             -->
-            <executor ref="rms_user.insert" params="bodyJson"/>
+            <executor ref="rms_user.insert" params=DaoConstants.BODY_JSON/>
         </controller>
 
         <controller method="DELETE">
@@ -52,7 +52,7 @@
             <!--
               直接使用默认的查询方法
             -->
-            <executor ref="rms_user.select" params="bodyJson"/>
+            <executor ref="rms_user.select" params=DaoConstants.BODY_JSON/>
         </controller>
 
         <controller useTransaction="true" method="GET">
