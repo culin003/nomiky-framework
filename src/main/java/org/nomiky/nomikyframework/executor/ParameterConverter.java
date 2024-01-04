@@ -7,7 +7,6 @@ package org.nomiky.nomikyframework.executor;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -26,6 +25,6 @@ public interface ParameterConverter {
      * @param parentParams 上一个执行结果
      * @return 转换后的参数
      */
-    Map<String, Object> convert(String paramsRef, HttpServletRequest request, Object parentParams) throws IOException;
+    Map<String, Object> convert(String paramsRef, HttpServletRequest request, Object parentParams) ;
 
 }

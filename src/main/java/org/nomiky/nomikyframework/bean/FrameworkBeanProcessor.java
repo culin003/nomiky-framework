@@ -35,6 +35,7 @@ import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import java.io.File;
@@ -86,7 +87,7 @@ public class FrameworkBeanProcessor implements BeanDefinitionRegistryPostProcess
                 // BEAN名称为tableName
                 registry.registerBeanDefinition(tableName + DaoConstants.DAO_EXECUTOR_BEAN_NAME_SUFFIX, beanDefinition);
                 executorMap.put(tableName, daoExecutor);
-                log.info("Register DaoExecutor Bean: {}", tableName);
+                log.info("Register DaoExecutor Bean: {} with xml file {}", tableName, tableDefinition.getFileName());
             });
         }
 
@@ -101,22 +102,24 @@ public class FrameworkBeanProcessor implements BeanDefinitionRegistryPostProcess
             if (ArrayUtil.isEmpty(files)) {
                 return;
             }
+
             for (File xmlFile : files) {
                 Document document;
                 SAXReader reader = new SAXReader();
                 document = reader.read(xmlFile);
                 // <mapper>
-                Map<String, XmlMapper> mappers = fillXmlMapper(document);
+                Map<String, XmlMapper> mappers = fillXmlMapper(document, xmlFile.getAbsolutePath());
                 // <interceptors>
                 Set<String> interceptors = fillXmlInterceptor(document);
                 // <controller>
-                List<XmlController> controllers = fillXmlController(document);
+                List<XmlController> controllers = fillXmlController(document,  xmlFile.getAbsolutePath());
                 ControllerBeanProcessor controllerBeanProcessor = new ControllerBeanProcessor();
                 controllerBeanProcessor.setControllers(controllers);
                 controllerBeanProcessor.setExecutorMap(executorMap);
                 controllerBeanProcessor.setInterceptors(interceptors);
                 controllerBeanProcessor.setMappers(mappers);
                 controllerBeanProcessor.setParameterConverter(new SpelParameterConvertor());
+                controllerBeanProcessor.setJdbcTemplate(jdbcTemplate);
                 controllerBeanProcessorList.add(controllerBeanProcessor);
             }
         } catch (DocumentException de) {
@@ -126,7 +129,7 @@ public class FrameworkBeanProcessor implements BeanDefinitionRegistryPostProcess
         }
     }
 
-    private List<XmlController> fillXmlController(Document document) {
+    private List<XmlController> fillXmlController(Document document, String xmlFile) {
         List<Node> controllerNodes = document.selectNodes("/controller/controller");
         if (CollUtil.isEmpty(controllerNodes)) {
             return new ArrayList<>(0);
@@ -138,6 +141,7 @@ public class FrameworkBeanProcessor implements BeanDefinitionRegistryPostProcess
         for (Node controllerNode : controllerNodes) {
             DefaultElement controllerElement = (DefaultElement) controllerNode;
             XmlController controller = fillXmlControllerList(controllerElement, parentPath);
+            controller.setFileName(xmlFile);
             controllers.add(controller);
         }
         return controllers;
@@ -160,7 +164,7 @@ public class FrameworkBeanProcessor implements BeanDefinitionRegistryPostProcess
         return interceptorSet;
     }
 
-    private Map<String, XmlMapper> fillXmlMapper(Document document) {
+    private Map<String, XmlMapper> fillXmlMapper(Document document, String xmlFile) {
         List<Node> mapperNodes = document.selectNodes("/controller/mapper");
         if (CollUtil.isEmpty(mapperNodes)) {
             return new HashMap<>(0);
@@ -171,6 +175,7 @@ public class FrameworkBeanProcessor implements BeanDefinitionRegistryPostProcess
             XmlMapper mapper = new XmlMapper();
             DefaultElement element = (DefaultElement) mapperNode;
             mapper.setId(element.attributeValue("id"));
+            mapper.setFileName(xmlFile);
             List<Node> propertyNodes = mapperNode.selectNodes("property");
             if (CollUtil.isEmpty(propertyNodes)) {
                 continue;
@@ -203,12 +208,17 @@ public class FrameworkBeanProcessor implements BeanDefinitionRegistryPostProcess
         for (Node executorNode : executorNodes) {
             XmlExecutor executor = new XmlExecutor();
             DefaultElement executorElement = (DefaultElement) executorNode;
+            // 使用默认DaoExecutor时需要配置的属性
             executor.setParams(executorElement.attributeValue("params"));
             executor.setRef(executorElement.attributeValue("ref"));
             executor.setSchema(executorElement.attributeValue("schema"));
             executor.setMapperRef(executorElement.attributeValue("mapperRef"));
-            // TODO: 后面再实现Executor中的SQL语句定义
-            // executor.setXmlSqlDefinition();
+
+            // 使用自定义SQL语句时需要配置的属性
+            executor.setType(executorElement.attributeValue("type", XmlExecutor.TYPE_DEFAULT));
+            executor.setEngine(executorElement.attributeValue("engine", XmlExecutor.ENGINE_DEFAULT));
+            executor.setOperator(executorElement.attributeValue("operator", XmlExecutor.OPERATOR_SELECT));
+            executor.setSqlDefinition(executorElement.getText());
             executors.add(executor);
         }
 
@@ -237,6 +247,7 @@ public class FrameworkBeanProcessor implements BeanDefinitionRegistryPostProcess
             xmlTable.setName(tableName);
             xmlTable.setSchema(element.attributeValue("schema"));
             xmlTable.setPrimaryKeyGenerator(element.attributeValue("keyGenerator"));
+            xmlTable.setFileName(fileUrl.getFile());
             xmlTables.add(xmlTable);
         }
 
@@ -255,9 +266,11 @@ public class FrameworkBeanProcessor implements BeanDefinitionRegistryPostProcess
         }
 
         RequestMappingHandlerMapping handlerMapping = event.getApplicationContext().getBean(RequestMappingHandlerMapping.class);
+        DataSourceTransactionManager transactionManager = event.getApplicationContext().getBean(DataSourceTransactionManager.class);
         // 生成映射
         for (ControllerBeanProcessor controllerBeanProcessor : this.controllerBeanProcessorList) {
             controllerBeanProcessor.setHandlerMapping(handlerMapping);
+            controllerBeanProcessor.setTransactionManager(transactionManager);
             try {
                 controllerBeanProcessor.mapHandlerMapping();
             } catch (NoSuchMethodException e) {

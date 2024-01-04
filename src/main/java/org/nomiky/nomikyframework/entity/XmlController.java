@@ -7,6 +7,7 @@ package org.nomiky.nomikyframework.entity;
 
 import cn.hutool.core.util.ReflectUtil;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.nomiky.nomikyframework.interceptor.NomikyInterceptor;
 
 import java.util.HashSet;
@@ -19,8 +20,9 @@ import java.util.Set;
  * @author nomiky
  * @since 2023年12月22日 16时58分
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class XmlController {
+public class XmlController extends XmlEntity {
 
     /**
      * 映射路径

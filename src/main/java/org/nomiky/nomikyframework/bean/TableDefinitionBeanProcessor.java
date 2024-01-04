@@ -52,6 +52,7 @@ public class TableDefinitionBeanProcessor {
         Checker.checkEmpty(ExecutorEnum.JDBC_TEMPLATE_IS_EMPTY, jdbcTemplate);
         for (XmlTable xmlTable : xmlTables) {
             TableDefinition tableDefinition = explainTable(jdbcTemplate, xmlTable);
+            tableDefinition.setFileName(xmlTable.getFileName());
             tableDefinitionMap.put(StrUtil.isEmpty(xmlTable.getSchema())
                     ? xmlTable.getName()
                     : (xmlTable.getSchema() + '.' + xmlTable.getName()), tableDefinition);
@@ -74,7 +75,7 @@ public class TableDefinitionBeanProcessor {
         tableDefinition.setPrimaryKey(primaryKey);
         LinkedHashMap<String, Type> columnMap = getColumnAndTypes(jdbcTemplate, xmlTable);
         tableDefinition.setColumns(columnMap);
-        log.info("Explain table {}, primary key: {}, columns: {}", xmlTable.getName(), primaryKey, StrUtil.join(StrUtil.COMMA, columnMap.keySet()));
+        log.info("Explain table: {}, primary key: {}, columns: {}", xmlTable.getName(), primaryKey, StrUtil.join(StrUtil.COMMA, columnMap.keySet()));
         return tableDefinition;
     }
 

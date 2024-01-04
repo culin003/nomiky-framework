@@ -10,6 +10,7 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -22,8 +23,9 @@ import java.util.Map;
  * @author nomiky
  * @since 2023年12月21日 18时41分
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class TableDefinition {
+public class TableDefinition extends XmlEntity {
 
     public static final String UUID_GENERATOR = "UUID";
     public static final String SNOWFLAKE_GENERATOR = "SNOWFLAKE";

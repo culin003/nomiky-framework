@@ -6,6 +6,7 @@
 package org.nomiky.nomikyframework.entity;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 在XML中定义的Executor
@@ -13,22 +14,33 @@ import lombok.Data;
  * @author nomiky
  * @since 2023年12月22日 17时02分
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class XmlExecutor {
+public class XmlExecutor extends XmlEntity{
 
     public static final String TYPE_SQL = "sql";
     public static final String TYPE_DEFAULT = "default";
+
+    public static final String ENGINE_DEFAULT = "DaoExecutor";
+    public static final String ENGINE_GROOVY = "Groovy";
+    public static final String ENGINE_JAVASCRIPT = "JavaScript";
+
+    public static final String OPERATOR_SELECT = "select";
+    public static final String OPERATOR_DELETE = "delete";
+    public static final String OPERATOR_UPDATE = "update";
+    public static final String OPERATOR_INSERT = "insert";
 
     /**
      * 默认类型的执行器使用DaoExecutor已经定义好的方法执行
      * SQL类型的执行器，会解析SQL语句执行
      */
-    private String type = TYPE_DEFAULT;
+    private String type;
 
     /**
      * SQL语句解析引擎：
      * Groovy：符合Groovy语法的SQL语句和参数拼装语句
      * JavaScript：符合JavaScript语法的SQL语句和参数拼装语句
+     * DaoExecutor: 默认提供的执行器
      */
     private String engine;
 
@@ -62,5 +74,10 @@ public class XmlExecutor {
     /**
      * SQL语句定义，和ref属性互斥
      */
-    private XmlSqlDefinition xmlSqlDefinition;
+    private String operator;
+
+    /**
+     * SQL语句定义
+     */
+    private String sqlDefinition;
 }

@@ -8,20 +8,15 @@ package org.nomiky.nomikyframework.entity;
 import lombok.Data;
 
 /**
- * 在XML中定义的SQL语句
- *
  * @author nomiky
- * @since 2023年12月22日 17时13分
+ * @since 2024年01月04日 14时13分
  */
 @Data
-public class XmlSqlDefinition {
+public class XmlEntity {
 
     /**
-     * SQL操作：select、update、delete、insert
-     * 不支持DML、DDL
+     * XML文件
      */
-    private String operator;
-
-    private String sql;
+    private String fileName;
 
 }

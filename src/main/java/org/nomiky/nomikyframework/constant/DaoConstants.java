@@ -48,4 +48,14 @@ public interface DaoConstants {
     String BODY_JSON = "bodyJson";
 
     String DAO_EXECUTOR_BEAN_NAME_SUFFIX = "_bean";
+
+    /**
+     * 在拼装SQL语句的引擎环境中定义的SQL语句变量名称
+     */
+    String SQL_ASSEMBLY_RESULT = "sqlResult";
+
+    /**
+     * 在拼装SQL语句的引擎环境中定义的SQL参数变量名称
+     */
+    String SQL_ASSEMBLY_PARAMETER = "sqlParams";
 }

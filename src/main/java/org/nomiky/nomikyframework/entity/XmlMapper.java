@@ -7,6 +7,7 @@ package org.nomiky.nomikyframework.entity;
 
 import cn.hutool.core.map.BiMap;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 在XML中定义的属性名称映射
@@ -14,8 +15,9 @@ import lombok.Data;
  * @author nomiky
  * @since 2023年12月22日 16时58分
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class XmlMapper {
+public class XmlMapper extends XmlEntity {
 
     /**
      * 引用ID

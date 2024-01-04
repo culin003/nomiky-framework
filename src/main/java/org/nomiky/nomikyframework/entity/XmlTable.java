@@ -6,6 +6,7 @@
 package org.nomiky.nomikyframework.entity;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 在XML中定义的table
@@ -13,8 +14,9 @@ import lombok.Data;
  * @author nomiky
  * @since 2023年12月22日 09时53分
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class XmlTable {
+public class XmlTable extends XmlEntity {
 
     private String schema;
 

@@ -73,12 +73,12 @@ public class DaoExecutorBeanProcessor {
                         .append(StrUtil.join(StrUtil.COMMA, columnSet))
                         .append(')')
                         .append(" VALUES (");
-                for (int i = 0; i < columnSet.size(); i++) {
-                    sqlBuilder.append((i == columnSet.size() - 1) ? "?" : "?, ");
+                for (int i = 0; i <= columnSet.size(); i++) {
+                    sqlBuilder.append((i == columnSet.size()) ? "?" : "?, ");
                 }
 
                 sqlBuilder.append(')');
-                log.info("SQL: {}", sqlBuilder);
+                log.info(sqlBuilder.toString());
                 return jdbcTemplate.update(sqlBuilder.toString(), ps -> {
                     ps.setObject(1, tableDefinition.generateId());
                     int index = 2;
@@ -100,7 +100,7 @@ public class DaoExecutorBeanProcessor {
                         .append(primaryKey)
                         .append(" = ?");
                 Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
-                log.info("SQL: {}", sqlBuilder);
+                log.info(sqlBuilder.toString());
                 return jdbcTemplate.update(sqlBuilder.toString(), finalMap.get(tableDefinition.getPrimaryKey()));
             }
 
@@ -126,7 +126,7 @@ public class DaoExecutorBeanProcessor {
                 sqlBuilder.deleteCharAt(sqlBuilder.length() - 1);
                 sqlBuilder.append(" WHERE ").append(primaryKey).append(" = ?");
 
-                log.info("SQL: {}", sqlBuilder);
+                log.info(sqlBuilder.toString());
                 return jdbcTemplate.update(sqlBuilder.toString(), ps -> {
                     int index = 1;
                     for (Map.Entry<String, Object> entry : finalValueMap.entrySet()) {
@@ -144,14 +144,14 @@ public class DaoExecutorBeanProcessor {
             public List<Map<String, Object>> select(Map<String, Object> valuesMap) {
                 Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
                 Pair<String, Object[]> parseResult = parseSelectSql(finalMap, false, false);
-                log.info("SQL: {}", parseResult.getKey());
+                log.info(parseResult.getKey());
                 return queryForMap(parseResult);
             }
 
             public Map<String, Object> selectOne(Map<String, Object> valuesMap) {
                 Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
                 Pair<String, Object[]> parseResult = parseSelectSql(finalMap, false, true);
-                log.info("SQL: {}", parseResult.getKey());
+                log.info(parseResult.getKey());
                 List<Map<String, Object>> result = queryForMap(parseResult);
                 return CollUtil.isEmpty(result) ? new HashMap<>(0) : result.get(0);
             }
@@ -159,9 +159,13 @@ public class DaoExecutorBeanProcessor {
             public Boolean exist(Map<String, Object> valuesMap) {
                 Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
                 Pair<String, Object[]> parseResult = parseSelectSql(finalMap, true, true);
-                log.info("SQL: {}", parseResult.getKey());
+                log.info(parseResult.getKey());
                 Long count = jdbcTemplate.query(parseResult.getKey(), rs -> {
-                    return rs.getLong(1);
+                    if (rs.next()) {
+                        return rs.getLong(1);
+                    } else {
+                        return 0L;
+                    }
                 }, parseResult.getValue());
                 return null == count ? Boolean.FALSE : count > 0;
             }
@@ -169,9 +173,13 @@ public class DaoExecutorBeanProcessor {
             public Long count(Map<String, Object> valuesMap) {
                 Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
                 Pair<String, Object[]> parseResult = parseSelectSql(finalMap, true, false);
-                log.info("SQL: {}", parseResult.getKey());
+                log.info(parseResult.getKey());
                 Long count = jdbcTemplate.query(parseResult.getKey(), rs -> {
-                    return rs.getLong(1);
+                    if (rs.next()) {
+                        return rs.getLong(1);
+                    } else {
+                        return 0L;
+                    }
                 }, parseResult.getValue());
                 return null == count ? 0 : count;
             }
@@ -185,8 +193,8 @@ public class DaoExecutorBeanProcessor {
 
                 Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
                 Long count = count(finalMap);
-                page.setCurrent((Long) valuesMap.get(DaoConstants.PAGING_CURRENT));
-                page.setSize((Long) valuesMap.get(DaoConstants.PAGING_SIZE));
+                page.setCurrent(Long.parseLong(valuesMap.get(DaoConstants.PAGING_CURRENT).toString()));
+                page.setSize(Long.parseLong(valuesMap.get(DaoConstants.PAGING_SIZE).toString()));
                 if (count <= 0) {
                     page.setTotal(0);
                     page.setRecords(new ArrayList<>(0));
@@ -195,7 +203,7 @@ public class DaoExecutorBeanProcessor {
 
                 page.setTotal(count);
                 Pair<String, Object[]> parseResult = parseSelectPageSql(finalMap, page);
-                log.info("SQL: {}", parseResult.getKey());
+                log.info(parseResult.getKey());
                 page.setRecords(queryForMap(parseResult));
                 return page;
             }
@@ -209,12 +217,12 @@ public class DaoExecutorBeanProcessor {
                 if (ArrayUtil.isEmpty(params)) {
                     params = new Object[2];
                 } else {
-                    index = params.length - 1;
+                    index = params.length;
                     params = ArrayUtil.resize(params, params.length + 2);
                 }
 
-                params[++index] = (page.getCurrent() - 1) * page.getSize();
-                params[++index] = page.getSize();
+                params[index++] = (page.getCurrent() - 1) * page.getSize();
+                params[index] = page.getSize();
                 return new Pair<>(sql, params);
             }
 
@@ -250,7 +258,7 @@ public class DaoExecutorBeanProcessor {
                 return jdbcTemplate.query(parseResult.getKey(), (rs, rowNum) -> {
                     Map<String, Object> resultMap = new HashMap<>();
                     for (String column : tableDefinition.getColumns().keySet()) {
-                        resultMap.put(column, rs.getObject(column));
+                        resultMap.put(StrUtil.toCamelCase(column), rs.getObject(column));
                     }
                     return resultMap;
                 }, parseResult.getValue());
