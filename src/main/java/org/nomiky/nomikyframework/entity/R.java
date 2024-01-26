@@ -25,6 +25,14 @@ public class R<T> implements Serializable {
         return new R<>(500, "失败！", null);
     }
 
+    public static R<?> fail(int code) {
+        return new R<>(code, "失败！", null);
+    }
+
+    public static R<?> fail(int code, String message) {
+        return new R<>(code, message, null);
+    }
+
     public static R<?> fail(String message) {
         return new R<>(500, message, null);
     }

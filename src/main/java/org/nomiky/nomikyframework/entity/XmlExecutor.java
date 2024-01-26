@@ -19,6 +19,7 @@ import lombok.EqualsAndHashCode;
 public class XmlExecutor extends XmlEntity{
 
     public static final String TYPE_SQL = "sql";
+    public static final String TYPE_BEAN = "bean";
     public static final String TYPE_DEFAULT = "default";
 
     public static final String ENGINE_DEFAULT = "DaoExecutor";

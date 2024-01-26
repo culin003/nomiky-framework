@@ -59,7 +59,7 @@ public class RequestUtil {
     public static Map<String, Object> getBodyMap(HttpServletRequest request) {
         try {
             String jsonStr = IoUtil.read(request.getInputStream(), Charset.defaultCharset());
-            if (StrUtil.isEmpty(jsonStr) || !StrUtil.startWith(jsonStr, "[") || !StrUtil.startWith(jsonStr, "{")) {
+            if (StrUtil.isEmpty(jsonStr) || !(StrUtil.startWith(jsonStr, "[") || StrUtil.startWith(jsonStr, "{"))) {
                 return new HashMap<>(0);
             }
 

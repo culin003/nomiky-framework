@@ -53,10 +53,13 @@ public class FrameworkBeanProcessor implements BeanDefinitionRegistryPostProcess
 
     private final JdbcTemplate jdbcTemplate;
 
+    private final FrameworkConfig frameworkConfig;
+
     private final List<ControllerBeanProcessor> controllerBeanProcessorList = new ArrayList<>();
 
-    public FrameworkBeanProcessor(JdbcTemplate jdbcTemplate) {
+    public FrameworkBeanProcessor(JdbcTemplate jdbcTemplate, FrameworkConfig frameworkConfig) {
         this.jdbcTemplate = jdbcTemplate;
+        this.frameworkConfig = frameworkConfig;
     }
 
     @Override
@@ -82,7 +85,7 @@ public class FrameworkBeanProcessor implements BeanDefinitionRegistryPostProcess
         Map<String, DaoExecutor> executorMap = new HashMap<>();
         if (MapUtil.isNotEmpty(tableDefinitionMap)) {
             tableDefinitionMap.forEach((tableName, tableDefinition) -> {
-                DaoExecutor daoExecutor = DaoExecutorBeanProcessor.getInstance().createSpecifyExecutor(tableDefinition, jdbcTemplate);
+                DaoExecutor daoExecutor = DaoExecutorBeanProcessor.getInstance().createSpecifyExecutor(tableDefinition, jdbcTemplate, frameworkConfig);
                 BeanDefinition beanDefinition = BeanDefinitionBuilder.genericBeanDefinition(DaoExecutor.class, () -> daoExecutor).getRawBeanDefinition();
                 // BEAN名称为tableName
                 registry.registerBeanDefinition(tableName + DaoConstants.DAO_EXECUTOR_BEAN_NAME_SUFFIX, beanDefinition);

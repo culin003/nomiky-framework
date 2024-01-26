@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
  * @since 2023年12月27日 16时18分
  */
 @Component
-public class DaoExecuterManager implements ApplicationContextAware {
+public class DaoExecutorManager implements ApplicationContextAware {
 
     private ApplicationContext applicationContext;
 

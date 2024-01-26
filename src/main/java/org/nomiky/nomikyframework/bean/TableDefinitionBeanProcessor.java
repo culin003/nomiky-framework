@@ -13,13 +13,16 @@ import org.nomiky.nomikyframework.entity.XmlTable;
 import org.nomiky.nomikyframework.enums.ExecutorEnum;
 import org.nomiky.nomikyframework.util.Checker;
 import org.nomiky.nomikyframework.util.DataTypeConverter;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 
 import java.lang.reflect.Type;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -104,6 +107,7 @@ public class TableDefinitionBeanProcessor {
                 columnMap.put(metaData.getColumnName(i),
                         DataTypeConverter.getInstance().getJavaType(metaData.getColumnType(i)));
             }
+            return null;
         });
 
         return columnMap;

@@ -12,10 +12,12 @@ import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.nomiky.nomikyframework.constant.DaoConstants;
+import org.nomiky.nomikyframework.entity.FrameworkConfig;
 import org.nomiky.nomikyframework.entity.Page;
 import org.nomiky.nomikyframework.entity.TableDefinition;
 import org.nomiky.nomikyframework.exception.ExecutorException;
 import org.nomiky.nomikyframework.executor.DaoExecutor;
+import org.nomiky.nomikyframework.executor.FieldValueAutoGenaratorHelper;
 import org.nomiky.nomikyframework.util.Checker;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -50,7 +52,7 @@ public class DaoExecutorBeanProcessor {
      * @param tableDefinition 表
      * @return 指定表的Executor
      */
-    public DaoExecutor createSpecifyExecutor(final TableDefinition tableDefinition, final JdbcTemplate jdbcTemplate) {
+    public DaoExecutor createSpecifyExecutor(final TableDefinition tableDefinition, final JdbcTemplate jdbcTemplate, FrameworkConfig frameworkConfig) {
         return new DaoExecutor() {
             public String getTableName() {
                 Checker.checkEmpty(TABLE_NAME_EMPTY, tableDefinition.getName());
@@ -60,6 +62,7 @@ public class DaoExecutorBeanProcessor {
             public Integer insert(Map<String, Object> valuesMap) {
                 String primaryKey = tableDefinition.getPrimaryKey();
                 Checker.checkEmpty(TABLE_EXPLAIN_ERROR, primaryKey);
+                FieldValueAutoGenaratorHelper.autoGenerate(FieldValueAutoGenaratorHelper.INSERT, valuesMap);
                 Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
                 StringBuilder sqlBuilder = new StringBuilder();
                 final LinkedHashSet<String> columnSet = new LinkedHashSet<>(finalMap.keySet());
@@ -99,6 +102,7 @@ public class DaoExecutorBeanProcessor {
                         .append(" WHERE ")
                         .append(primaryKey)
                         .append(" = ?");
+                FieldValueAutoGenaratorHelper.autoGenerate(FieldValueAutoGenaratorHelper.DELETE, valuesMap);
                 Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
                 log.info(sqlBuilder.toString());
                 return jdbcTemplate.update(sqlBuilder.toString(), finalMap.get(tableDefinition.getPrimaryKey()));
@@ -111,6 +115,7 @@ public class DaoExecutorBeanProcessor {
                     throw new ExecutorException("Primary key value is unset！");
                 }
 
+                FieldValueAutoGenaratorHelper.autoGenerate(FieldValueAutoGenaratorHelper.UPDATE, valuesMap);
                 Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
                 StringBuilder sqlBuilder = new StringBuilder();
                 sqlBuilder.append("UPDATE ")

@@ -6,9 +6,12 @@
 package org.nomiky.nomikyframework.bean;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.exceptions.InvocationTargetRuntimeException;
 import cn.hutool.core.lang.Pair;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.spring.SpringUtil;
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,7 +24,9 @@ import org.nomiky.nomikyframework.entity.XmlController;
 import org.nomiky.nomikyframework.entity.XmlExecutor;
 import org.nomiky.nomikyframework.entity.XmlMapper;
 import org.nomiky.nomikyframework.exception.ExecutorException;
+import org.nomiky.nomikyframework.exception.ServiceException;
 import org.nomiky.nomikyframework.executor.DaoExecutor;
+import org.nomiky.nomikyframework.executor.FieldTypeConverterManager;
 import org.nomiky.nomikyframework.executor.ParameterConverter;
 import org.nomiky.nomikyframework.executor.RequestHandler;
 import org.nomiky.nomikyframework.interceptor.InterceptorContext;
@@ -42,6 +47,9 @@ import javax.script.Bindings;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
+import javax.sql.rowset.serial.SerialException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.ResultSetMetaData;
 import java.util.HashMap;
 import java.util.List;
@@ -117,62 +125,103 @@ public class ControllerBeanProcessor {
                 return R.fail("Can not find DaoExecutor for controller mapping: " + controller.getPath());
             }
 
-            // 置前拦截器
-            InterceptorContext context = new InterceptorContext(request, response);
-            List<NomikyInterceptor> beforeInterceptors = controller.getBeforeInterceptors();
-            if (CollUtil.isNotEmpty(beforeInterceptors)) {
-                for (NomikyInterceptor beforeInterceptor : beforeInterceptors) {
-                    beforeInterceptor.process(context);
-                }
-            }
-
             // 处理Executor
-            Object value = StrUtil.EMPTY;
-            boolean isUseTransaction = controller.getUseTransaction();
-            if (isUseTransaction) {
-                TransactionDefinition transactionDefinition = new DefaultTransactionDefinition();
-                TransactionStatus transactionStatus = transactionManager.getTransaction(transactionDefinition);
-                try {
+            try {
+                // 置前拦截器
+                InterceptorContext context = new InterceptorContext(request, response);
+                List<NomikyInterceptor> beforeInterceptors = controller.getBeforeInterceptors();
+                if (CollUtil.isNotEmpty(beforeInterceptors)) {
+                    for (NomikyInterceptor beforeInterceptor : beforeInterceptors) {
+                        beforeInterceptor.process(context);
+                    }
+                }
+                Object value = StrUtil.EMPTY;
+                boolean isUseTransaction = controller.getUseTransaction();
+                if (isUseTransaction) {
+                    TransactionDefinition transactionDefinition = new DefaultTransactionDefinition();
+                    TransactionStatus transactionStatus = transactionManager.getTransaction(transactionDefinition);
+                    try {
+                        for (XmlExecutor executor : executors) {
+                            value = doExecutor(executor, request, value);
+                        }
+                        transactionManager.commit(transactionStatus);
+                    } catch (Exception e) {
+                        transactionManager.rollback(transactionStatus);
+                        log.error("Executor fail!", e);
+                    }
+                } else {
                     for (XmlExecutor executor : executors) {
                         value = doExecutor(executor, request, value);
                     }
-                    transactionManager.commit(transactionStatus);
-                } catch (Exception e) {
-                    transactionManager.rollback(transactionStatus);
-                    log.error("Executor fail!", e);
                 }
-            } else {
-                for (XmlExecutor executor : executors) {
-                    value = doExecutor(executor, request, value);
+                // 后置拦截器
+                List<NomikyInterceptor> afterInterceptors = controller.getAfterInterceptors();
+                if (CollUtil.isNotEmpty(afterInterceptors)) {
+                    context.setValue(value);
+                    for (NomikyInterceptor afterInterceptor : afterInterceptors) {
+                        afterInterceptor.process(context);
+                    }
                 }
-            }
 
-            // 后置拦截器
-            List<NomikyInterceptor> afterInterceptors = controller.getAfterInterceptors();
-            if (CollUtil.isNotEmpty(afterInterceptors)) {
-                context.setValue(value);
-                for (NomikyInterceptor afterInterceptor : afterInterceptors) {
-                    afterInterceptor.process(context);
+                return R.data(value);
+            } catch (ServiceException se) {
+                log.error("Service exception!!", se);
+                return R.fail(se.getCode(), se.getMessage());
+            } catch (InvocationTargetRuntimeException ite) {
+                log.error("Occur exception!!", ite);
+                Throwable target = ite.getCause().getCause();
+                if (target instanceof ServiceException se) {
+                    return R.fail(se.getCode(), se.getMessage());
                 }
+                return R.fail();
+            } catch (Exception e) {
+                log.error("Run executor occur exception!!", e);
+                return R.fail();
             }
-
-            return R.data(value);
         };
     }
 
     private Object doExecutor(XmlExecutor executor, HttpServletRequest request, Object parentParams) throws Exception {
         if (XmlExecutor.TYPE_SQL.equals(executor.getType())) {
             return doSqlDaoExecutor(executor, request, parentParams);
+        } else if (XmlExecutor.TYPE_BEAN.equals(executor.getType())) {
+            return doBeanDaoExecutor(executor, request, parentParams);
         } else {
             return doDefaultDaoExecutor(executor, request, parentParams);
         }
     }
 
+    private Object doBeanDaoExecutor(XmlExecutor executor, HttpServletRequest request, Object parentParams) {
+        String beanRef = executor.getRef();
+        List<String> beanInfo = StrUtil.split(beanRef, StrUtil.DOT);
+        if (CollUtil.isEmpty(beanInfo) || beanInfo.size() != 2) {
+            throw new ExecutorException("文件：" + executor.getFileName() + "定义的ref：" + beanRef + "不正确，" +
+                    "请使用beanName.beanMethod的方式定义bean及方法引用！！");
+        }
+
+        String beanName = beanInfo.get(0);
+        String beanMethod = beanInfo.get(1);
+        Object bean = SpringUtil.getBean(beanName);
+        if (null == bean) {
+            throw new ExecutorException("文件：" + executor.getFileName() + "定义的ref：" + beanRef + "不正确，" +
+                    "未能找到名称为" + beanName + "的bean！！");
+        }
+
+        Map<String, Object> valueMap = parameterConverter.convert(executor.getParams(), request, parentParams);
+        Class<?> daoClass = bean.getClass();
+        Method method = ReflectUtil.getMethod(daoClass, beanMethod, Map.class);
+        if (null == method) {
+            throw new ExecutorException("文件：" + executor.getFileName() + "定义的ref：" + beanRef + "不正确，" +
+                    "未能找到名称为" + beanMethod + "的bean方法！！");
+        }
+
+        return ReflectUtil.invoke(bean, method, valueMap);
+    }
+
     private Object doSqlDaoExecutor(XmlExecutor executor, HttpServletRequest request, Object parentParams) throws Exception {
         String sqlDefinition = executor.getSqlDefinition();
         if (StrUtil.isEmpty(sqlDefinition)) {
-            log.warn("Empty sql definition in xml file {}!", executor.getFileName());
-            return null;
+            throw new ExecutorException("Empty sql definition in xml file " + executor.getFileName());
         }
 
         // 使用的SQL拼接引擎
@@ -257,19 +306,19 @@ public class ControllerBeanProcessor {
     private Object doDefaultDaoExecutor(XmlExecutor executor, HttpServletRequest request, Object parentParams) {
         String executorRef = executor.getRef();
         if (!executorRef.contains(".")) {
-            return null;
+            throw new ExecutorException("Error sql definition in xml file " + executor.getFileName());
         }
 
         List<String> refArray = StrUtil.split(executorRef, ".");
         if (refArray.size() < 2) {
-            return null;
+            throw new ExecutorException("Error sql definition in xml file " + executor.getFileName());
         }
 
         String daoName = refArray.get(0);
         daoName = StrUtil.isEmpty(executor.getSchema()) ? StrUtil.EMPTY : (executor.getSchema() + '.' + daoName);
         DaoExecutor daoExecutor = executorMap.get(daoName);
         if (null == daoExecutor) {
-            return null;
+            throw new ExecutorException("Error sql definition in xml file " + executor.getFileName());
         }
 
         Object value;
@@ -287,6 +336,6 @@ public class ControllerBeanProcessor {
             default -> value = StrUtil.EMPTY;
         }
 
-        return value;
+        return FieldTypeConverterManager.convert(value);
     }
 }
