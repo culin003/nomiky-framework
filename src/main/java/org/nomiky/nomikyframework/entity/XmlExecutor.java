@@ -5,8 +5,13 @@
  */
 package org.nomiky.nomikyframework.entity;
 
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 在XML中定义的Executor
@@ -27,6 +32,7 @@ public class XmlExecutor extends XmlEntity{
     public static final String ENGINE_JAVASCRIPT = "JavaScript";
 
     public static final String OPERATOR_SELECT = "select";
+    public static final String OPERATOR_BATCH = "batch";
     public static final String OPERATOR_DELETE = "delete";
     public static final String OPERATOR_UPDATE = "update";
     public static final String OPERATOR_INSERT = "insert";

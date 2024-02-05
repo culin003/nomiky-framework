@@ -10,6 +10,7 @@ import cn.hutool.core.lang.Pair;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONArray;
 import lombok.extern.slf4j.Slf4j;
 import org.nomiky.nomikyframework.constant.DaoConstants;
 import org.nomiky.nomikyframework.entity.FrameworkConfig;
@@ -19,9 +20,13 @@ import org.nomiky.nomikyframework.exception.ExecutorException;
 import org.nomiky.nomikyframework.executor.DaoExecutor;
 import org.nomiky.nomikyframework.executor.FieldValueAutoGenaratorHelper;
 import org.nomiky.nomikyframework.util.Checker;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.nomiky.nomikyframework.enums.ExecutorEnum.TABLE_EXPLAIN_ERROR;
 import static org.nomiky.nomikyframework.enums.ExecutorEnum.TABLE_NAME_EMPTY;
@@ -67,13 +72,15 @@ public class DaoExecutorBeanProcessor {
                 StringBuilder sqlBuilder = new StringBuilder();
                 final LinkedHashSet<String> columnSet = new LinkedHashSet<>(finalMap.keySet());
                 columnSet.remove(primaryKey);
-
+                List<String> columnList = columnSet.stream().map(s -> '`' + s + '`').collect(Collectors.toList());
                 sqlBuilder.append("INSERT INTO ")
                         .append(getTableName())
                         .append('(')
+                        .append('`')
                         .append(primaryKey)
+                        .append('`')
                         .append(',')
-                        .append(StrUtil.join(StrUtil.COMMA, columnSet))
+                        .append(StrUtil.join(StrUtil.COMMA, columnList))
                         .append(')')
                         .append(" VALUES (");
                 for (int i = 0; i <= columnSet.size(); i++) {
@@ -99,9 +106,9 @@ public class DaoExecutorBeanProcessor {
                 StringBuilder sqlBuilder = new StringBuilder();
                 sqlBuilder.append("DELETE FROM ")
                         .append(tableDefinition.getName())
-                        .append(" WHERE ")
+                        .append(" WHERE `")
                         .append(primaryKey)
-                        .append(" = ?");
+                        .append("` = ?");
                 FieldValueAutoGenaratorHelper.autoGenerate(FieldValueAutoGenaratorHelper.DELETE, valuesMap);
                 Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
                 log.info(sqlBuilder.toString());
@@ -124,12 +131,12 @@ public class DaoExecutorBeanProcessor {
                 LinkedHashMap<String, Object> finalValueMap = new LinkedHashMap<>(finalMap);
                 finalValueMap.forEach((k, v) -> {
                     if (!k.equalsIgnoreCase(primaryKey)) {
-                        sqlBuilder.append(' ').append(k).append(" = ?,");
+                        sqlBuilder.append(" `").append(k).append("` = ?,");
                     }
                 });
 
                 sqlBuilder.deleteCharAt(sqlBuilder.length() - 1);
-                sqlBuilder.append(" WHERE ").append(primaryKey).append(" = ?");
+                sqlBuilder.append(" WHERE `").append(primaryKey).append("` = ?");
 
                 log.info(sqlBuilder.toString());
                 return jdbcTemplate.update(sqlBuilder.toString(), ps -> {
@@ -213,6 +220,112 @@ public class DaoExecutorBeanProcessor {
                 return page;
             }
 
+            @Override
+            public void batchInsert(JSONArray params) {
+                String primaryKey = tableDefinition.getPrimaryKey();
+                Checker.checkEmpty(TABLE_EXPLAIN_ERROR, primaryKey);
+                StringBuilder sqlBuilder = new StringBuilder();
+                Map<String, Object> valuesMap = (Map<String, Object>) params.get(0);
+                FieldValueAutoGenaratorHelper.autoGenerate(FieldValueAutoGenaratorHelper.INSERT, valuesMap);
+                Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
+                final LinkedHashSet<String> columnSet = new LinkedHashSet<>(finalMap.keySet());
+                List<String> columnList = columnSet.stream().map(s -> '`' + s + '`').collect(Collectors.toList());
+                sqlBuilder.append("INSERT INTO ")
+                        .append(getTableName())
+                        .append('(')
+                        .append('`')
+                        .append(primaryKey)
+                        .append('`')
+                        .append(',')
+                        .append(StrUtil.join(StrUtil.COMMA, columnList))
+                        .append(')')
+                        .append(" VALUES (");
+                for (int i = 0; i <= columnSet.size(); i++) {
+                    sqlBuilder.append((i == columnSet.size()) ? "?" : "?, ");
+                }
+
+                sqlBuilder.append(')');
+                log.info(sqlBuilder.toString());
+                jdbcTemplate.batchUpdate(sqlBuilder.toString(), new BatchPreparedStatementSetter() {
+                    @Override
+                    public void setValues(PreparedStatement ps, int i) throws SQLException {
+                        Map<String, Object> tempFinalMap;
+                        if (i == 0) {
+                            tempFinalMap = finalMap;
+                        }else {
+                            Map<String, Object> tempValuesMap = (Map<String, Object>) params.get(i);
+                            FieldValueAutoGenaratorHelper.autoGenerate(FieldValueAutoGenaratorHelper.INSERT, tempValuesMap);
+                            tempFinalMap = tableDefinition.toDaoValueMap(tempValuesMap);
+                        }
+                        ps.setObject(1, tableDefinition.generateId());
+                        int index = 2;
+                        for (String tableColumn : columnSet) {
+                            if (tempFinalMap.containsKey(tableColumn)) {
+                                ps.setObject(index++, tempFinalMap.get(tableColumn));
+                            }
+                        }
+                    }
+
+                    @Override
+                    public int getBatchSize() {
+                        return params.size();
+                    }
+                });
+            }
+
+            @Override
+            public void batchUpdate(JSONArray params) {
+                String primaryKey = tableDefinition.getPrimaryKey();
+                Checker.checkEmpty(TABLE_EXPLAIN_ERROR, primaryKey);
+                Map<String, Object> valuesMap = (Map<String, Object>) params.get(0);
+                if (!valuesMap.containsKey(primaryKey)) {
+                    throw new ExecutorException("Primary key value is unset！");
+                }
+
+                FieldValueAutoGenaratorHelper.autoGenerate(FieldValueAutoGenaratorHelper.UPDATE, valuesMap);
+                Map<String, Object> finalMap = tableDefinition.toDaoValueMap(valuesMap);
+                StringBuilder sqlBuilder = new StringBuilder();
+                sqlBuilder.append("UPDATE ")
+                        .append(tableDefinition.getName())
+                        .append(" SET");
+                LinkedHashSet<String> finalKeySet = new LinkedHashSet<>(finalMap.keySet());
+                finalKeySet.forEach(k-> {
+                    if (!k.equalsIgnoreCase(primaryKey)) {
+                        sqlBuilder.append(" `").append(k).append("` = ?,");
+                    }
+                });
+
+                sqlBuilder.deleteCharAt(sqlBuilder.length() - 1);
+                sqlBuilder.append(" WHERE `").append(primaryKey).append("` = ?");
+
+                jdbcTemplate.update(sqlBuilder.toString(), new BatchPreparedStatementSetter() {
+                    @Override
+                    public void setValues(PreparedStatement ps, int i) throws SQLException {
+                        int index = 1;
+                        Map<String, Object> tempFinalMap;
+                        if (i == 0) {
+                            tempFinalMap = finalMap;
+                        }else{
+                            Map<String, Object> tempValuesMap = (Map<String, Object>) params.get(i);
+                            FieldValueAutoGenaratorHelper.autoGenerate(FieldValueAutoGenaratorHelper.UPDATE, tempValuesMap);
+                            tempFinalMap = tableDefinition.toDaoValueMap(tempValuesMap);
+                        }
+                        for (String key : finalKeySet) {
+                            if (!key.equalsIgnoreCase(primaryKey)) {
+                                ps.setObject(index++, tempFinalMap.get(key));
+                            }
+                        }
+
+                        ps.setObject(index, tempFinalMap.get(primaryKey));
+                    }
+
+                    @Override
+                    public int getBatchSize() {
+                        return params.size();
+                    }
+                });
+            }
+
             private Pair<String, Object[]> parseSelectPageSql(Map<String, Object> valuesMap, Page page) {
                 Pair<String, Object[]> parseResult = parseSelectSql(valuesMap, false, false);
                 String sql = parseResult.getKey();
@@ -234,8 +347,9 @@ public class DaoExecutorBeanProcessor {
             private Pair<String, Object[]> parseSelectSql(Map<String, Object> valuesMap, boolean isCount, boolean useLimitOne) {
                 StringBuilder sqlBuilder = new StringBuilder();
                 Set<String> columns = tableDefinition.getColumns().keySet();
+                List<String> columnList = columns.stream().map(s -> '`' + s + '`').collect(Collectors.toList());
                 sqlBuilder.append("SELECT ")
-                        .append(isCount ? "COUNT(*)" : StrUtil.join(StrUtil.COMMA, columns))
+                        .append(isCount ? "COUNT(*)" : StrUtil.join(StrUtil.COMMA, columnList))
                         .append(" FROM ")
                         .append(tableDefinition.getName());
                 Object[] params = null;

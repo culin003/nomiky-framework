@@ -48,7 +48,7 @@ public class SpelParameterConvertor implements ParameterConverter {
     @Override
     public Map<String, Object> convert(String paramRef, HttpServletRequest request, Object parentParams)  {
         paramRef = StrUtil.isEmpty(paramRef) ? DaoConstants.REQUEST_PARAMETER : paramRef;
-        Map<String, Object> valuesMap = new HashMap<>();
+        Map<String, Object> valuesMap;
         if (paramRef.startsWith("#" + DaoConstants.BODY_JSON)) {
             valuesMap = explainBodyJsonParams(request, paramRef);
         } else if (paramRef.startsWith("#" + DaoConstants.BODY_STRING)) {
@@ -106,7 +106,7 @@ public class SpelParameterConvertor implements ParameterConverter {
     }
 
 
-    private void setValueFromSPELExpression(Map<String, Object> resultMap,
+    public void setValueFromSPELExpression(Map<String, Object> resultMap,
                                             Map<String, Object> valuesMap,
                                             String spelExpression,
                                             String paramName) {
@@ -117,9 +117,12 @@ public class SpelParameterConvertor implements ParameterConverter {
         Object value = expression.getValue(context);
         if (null != value) {
             Matcher matcher = PATTERN.matcher(expression.getExpressionString());
-            if (matcher.find()) {
-                resultMap.put(matcher.group(1), value);
+            String fieldName = "";
+            while (matcher.find()) {
+                fieldName = matcher.group(1);
             }
+
+            resultMap.put(fieldName, value);
         }
     }
 }

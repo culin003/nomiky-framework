@@ -12,6 +12,7 @@ import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.spring.SpringUtil;
+import cn.hutool.json.JSONArray;
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,10 +52,9 @@ import javax.sql.rowset.serial.SerialException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.ResultSetMetaData;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 
 /**
  * 生成Controller Mapper
@@ -226,14 +226,15 @@ public class ControllerBeanProcessor {
 
         // 使用的SQL拼接引擎
         Pair<String, Object[]> realSqlDefinition = getSql(executor.getEngine(), sqlDefinition, request, parentParams);
-        if (StrUtil.isEmpty(realSqlDefinition.getKey())) {
-            throw new ExecutorException(StrUtil.format("Invalid executor sql definition! path: {}, file: {}",
-                    request.getRequestURI(), executor.getFileName()));
-        }
 
-        log.info(realSqlDefinition.getKey());
         // 查询操作
         if (XmlExecutor.OPERATOR_SELECT.equalsIgnoreCase(executor.getOperator())) {
+            if (StrUtil.isEmpty(realSqlDefinition.getKey())) {
+                throw new ExecutorException(StrUtil.format("Invalid executor sql definition! path: {}, file: {}",
+                        request.getRequestURI(), executor.getFileName()));
+            }
+
+            log.info(realSqlDefinition.getKey());
             return jdbcTemplate.query(realSqlDefinition.getKey(), (rs, rowNum) -> {
                 Map<String, Object> resultMap = new HashMap<>();
                 ResultSetMetaData metaData = rs.getMetaData();
@@ -245,8 +246,36 @@ public class ControllerBeanProcessor {
                 return resultMap;
             }, realSqlDefinition.getValue());
         }
+        else if (XmlExecutor.OPERATOR_BATCH.equalsIgnoreCase(executor.getOperator())) {
+            Object[] batchSqls = realSqlDefinition.getValue();
+            int count = 1;
+            if (batchSqls.length > 1000) {
+                count = batchSqls.length % 1000 == 0 ? batchSqls.length / 1000 : batchSqls.length / 1000 + 1;
+            }
+
+            String[] sqls = Arrays.stream(batchSqls).map(Object::toString).toArray(String[]::new);
+            TransactionDefinition transactionDefinition = new DefaultTransactionDefinition();
+            TransactionStatus transactionStatus = transactionManager.getTransaction(transactionDefinition);
+            try {
+                for (int i = 0; i < count; i++) {
+                    jdbcTemplate.batchUpdate(ArrayUtil.sub(sqls, i * 1000, (i + 1) * 1000));
+                }
+                transactionManager.commit(transactionStatus);
+                return true;
+            } catch (Exception e) {
+                transactionManager.rollback(transactionStatus);
+                log.error("Executor fail!", e);
+                return false;
+            }
+        }
         // 更新操作
         else {
+            if (StrUtil.isEmpty(realSqlDefinition.getKey())) {
+                throw new ExecutorException(StrUtil.format("Invalid executor sql definition! path: {}, file: {}",
+                        request.getRequestURI(), executor.getFileName()));
+            }
+
+            log.info(realSqlDefinition.getKey());
             return jdbcTemplate.update(realSqlDefinition.getKey(), ps -> {
                 if (ArrayUtil.isNotEmpty(realSqlDefinition.getValue())) {
                     for (int i = 0; i < realSqlDefinition.getValue().length; i++) {
@@ -271,6 +300,7 @@ public class ControllerBeanProcessor {
             bindings.put("$parent", parent);
             bindings.put(DaoConstants.SQL_ASSEMBLY_RESULT, StrUtil.EMPTY);
             bindings.put(DaoConstants.SQL_ASSEMBLY_PARAMETER, new HashMap<>());
+            bindings.put(DaoConstants.SQL_ASSEMBLY_BATCH, new HashMap<>());
             jsEngine.eval(sqlDefinition, bindings);
             sql = (String) bindings.getOrDefault(DaoConstants.SQL_ASSEMBLY_RESULT, StrUtil.EMPTY);
             HashMap<Integer, Object> map = (HashMap) bindings.getOrDefault(DaoConstants.SQL_ASSEMBLY_PARAMETER, new Object[0]);
@@ -333,6 +363,22 @@ public class ControllerBeanProcessor {
             case "exist" -> value = daoExecutor.exist(valueMap);
             case "count" -> value = daoExecutor.count(valueMap);
             case "selectPage" -> value = daoExecutor.selectPage(valueMap);
+            // 只能使用bodyJson
+            case "batchInsert" -> {
+                JSONArray values = (JSONArray) valueMap.entrySet().iterator().next().getValue();
+                if (CollUtil.isNotEmpty(values)) {
+                    daoExecutor.batchInsert(values);
+                }
+                value = true;
+            }
+            // 只能使用bodyJson
+            case "batchUpdate" -> {
+                JSONArray values = (JSONArray) valueMap.entrySet().iterator().next().getValue();
+                if (CollUtil.isNotEmpty(values)) {
+                    daoExecutor.batchUpdate(values);
+                }
+                value = true;
+            }
             default -> value = StrUtil.EMPTY;
         }
 

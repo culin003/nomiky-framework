@@ -5,8 +5,10 @@
  */
 package org.nomiky.nomikyframework.util;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,10 +16,9 @@ import org.nomiky.nomikyframework.constant.DaoConstants;
 import org.nomiky.nomikyframework.exception.ExecutorException;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author nomiky
@@ -58,8 +59,27 @@ public class RequestUtil {
 
     public static Map<String, Object> getBodyMap(HttpServletRequest request) {
         try {
-            String jsonStr = IoUtil.read(request.getInputStream(), Charset.defaultCharset());
-            if (StrUtil.isEmpty(jsonStr) || !(StrUtil.startWith(jsonStr, "[") || StrUtil.startWith(jsonStr, "{"))) {
+            String jsonStr;
+            Object bodyStringObj = request.getAttribute(DaoConstants.BODY_STRING);
+            if (null != bodyStringObj) {
+                jsonStr = bodyStringObj.toString();
+            }else {
+                jsonStr = IoUtil.read(request.getInputStream(), Charset.defaultCharset());
+                request.setAttribute(DaoConstants.BODY_STRING, jsonStr);
+            }
+
+            if (StrUtil.isNotEmpty(jsonStr) && StrUtil.startWith(jsonStr, "[")) {
+                JSONArray jsonArray = JSONUtil.parseArray(jsonStr);
+                if (CollUtil.isEmpty(jsonArray)) {
+                    return new HashMap<>(0);
+                }
+
+                Map<String, Object> valuesMap = new HashMap<>(1);
+                valuesMap.put(DaoConstants.BODY_LIST, jsonArray);
+                return valuesMap;
+            }
+
+            if (StrUtil.isEmpty(jsonStr) || !StrUtil.startWith(jsonStr, "{")) {
                 return new HashMap<>(0);
             }
 

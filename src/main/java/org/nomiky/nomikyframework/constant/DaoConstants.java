@@ -28,6 +28,11 @@ public interface DaoConstants {
     String BODY_STRING = "bodyString";
 
     /**
+     * 从request流中获取到的字符串参数
+     */
+    String BODY_LIST = "bodyList";
+
+    /**
      * 上个Executor的结果
      */
     String PARENT_RESULT = "parent";
@@ -50,9 +55,19 @@ public interface DaoConstants {
     String DAO_EXECUTOR_BEAN_NAME_SUFFIX = "_bean";
 
     /**
+     * 以此结尾的参数不参与SQL处理
+     */
+    String PARAM_IGNORE_SUFFIX = "_ign";
+
+    /**
      * 在拼装SQL语句的引擎环境中定义的SQL语句变量名称
      */
     String SQL_ASSEMBLY_RESULT = "sqlResult";
+
+    /**
+     * 在拼装SQL语句的引擎环境中定义的SQL语句变量名称
+     */
+    String SQL_ASSEMBLY_BATCH = "batchSql";
 
     /**
      * 在拼装SQL语句的引擎环境中定义的SQL参数变量名称

@@ -5,6 +5,7 @@
  */
 package org.nomiky.nomikyframework.executor;
 
+import cn.hutool.json.JSONArray;
 import org.nomiky.nomikyframework.entity.Page;
 
 import java.util.List;
@@ -88,4 +89,8 @@ public interface DaoExecutor {
      * @return 一页表数据数
      */
     Page selectPage(Map<String, Object> valuesMap);
+
+    void batchInsert(JSONArray params);
+
+    void batchUpdate(JSONArray params);
 }
